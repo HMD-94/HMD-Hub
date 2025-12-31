@@ -1,44 +1,27 @@
 --[[ WARNING: Use at your own risk ]]--
 
--- =====================
--- SERVICES
--- =====================
-
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
-
--- =====================
--- INSTANCES
--- =====================
-
-local main = Instance.new("ScreenGui")
-local frame = Instance.new("Frame")
-local titler = Instance.new("TextLabel")
-
-local collapseFrame = Instance.new("Frame")
-local collapseBtn = Instance.new("TextButton")
-
-local buttons = {}
-local collapsed = false
-local fullSize = UDim2.new(0, 300, 0, 400)
-local miniSize = UDim2.new(0, 300, 0, 40)
+local UserInputService = game:GetService("UserInputService")
 
 -- =====================
 -- GUI SETUP
 -- =====================
-
+local main = Instance.new("ScreenGui")
 main.Name = "HMD_MAIN"
 main.Parent = game.CoreGui
 
+local frame = Instance.new("Frame")
 frame.Parent = main
 frame.BackgroundColor3 = Color3.fromRGB(10,10,10)
 frame.BorderSizePixel = 3
 frame.Position = UDim2.new(0, 10, 0.3, 0)
-frame.Size = fullSize
+frame.Size = UDim2.new(0, 300, 0, 400)
 frame.Active = true
 frame.Draggable = true
 frame.ClipsDescendants = true
 
+local titler = Instance.new("TextLabel")
 titler.Parent = frame
 titler.Size = UDim2.new(1, 0, 0, 40)
 titler.BackgroundColor3 = Color3.fromRGB(10,10,10)
@@ -49,143 +32,146 @@ titler.TextSize = 26
 titler.TextColor3 = Color3.new(1,1,1)
 
 -- =====================
--- COLLAPSE (+ / - ENCADRÉ)
+-- COLLAPSE BUTTON
 -- =====================
-
-collapseFrame.Parent = titler
-collapseFrame.Size = UDim2.new(0, 32, 0, 32)
-collapseFrame.Position = UDim2.new(1, -36, 0.5, -16)
-collapseFrame.BackgroundColor3 = Color3.fromRGB(10,10,10)
-collapseFrame.BorderSizePixel = 2
-
-collapseBtn.Parent = collapseFrame
-collapseBtn.Size = UDim2.new(1, 0, 1, 0)
-collapseBtn.BackgroundTransparency = 1
+local collapseBtn = Instance.new("TextButton")
+collapseBtn.Parent = titler
+collapseBtn.Size = UDim2.new(0, 32, 0, 32)
+collapseBtn.Position = UDim2.new(1, -36, 0.5, -16)
 collapseBtn.Text = "—"
 collapseBtn.Font = Enum.Font.SourceSansBold
 collapseBtn.TextSize = 28
+collapseBtn.BackgroundTransparency = 1
 collapseBtn.TextColor3 = Color3.new(1,1,1)
 
--- =====================
--- BUTTON CREATOR
--- =====================
-
-local function createButton(text)
-	local btn = Instance.new("TextButton")
-	btn.Parent = frame
-	btn.Size = UDim2.new(0, 120, 0, 32)
-	btn.BackgroundColor3 = Color3.fromRGB(15,15,15)
-	btn.BorderSizePixel = 3
-	btn.Text = text
-	btn.Font = Enum.Font.SourceSans
-	btn.TextSize = 14
-	btn.TextWrapped = true
-	btn.TextColor3 = Color3.new(1,1,1)
-	table.insert(buttons, btn)
-	return btn
-end
-
-local b1 = createButton("Emote GUI")
-local b2 = createButton("Steal Brainrot")
-local b3 = createButton("Blox Fruit")
-local b4 = createButton("Auto Block")
-local b5 = createButton("Fly GUI")
-local b6 = createButton("Admin Cmd")
-local b7 = createButton("Brookhaven") -- 🏡 NOUVEAU BOUTON
-
--- =====================
--- GRID PLACEMENT
--- =====================
-
-local startY = 60
-local paddingX = 20
-local paddingY = 15
-local colSpacing = 140
-
-for i,btn in ipairs(buttons) do
-	local col = (i - 1) % 2
-	local row = math.floor((i - 1) / 2)
-
-	btn.Position = UDim2.new(
-		0, paddingX + col * colSpacing,
-		0, startY + row * (32 + paddingY)
-	)
-end
-
--- =====================
--- COLLAPSE LOGIC
--- =====================
-
+local collapsed = false
 collapseBtn.MouseButton1Click:Connect(function()
 	collapsed = not collapsed
-
 	if collapsed then
 		collapseBtn.Text = "+"
-		for _,v in pairs(buttons) do
-			v.Visible = false
+		for _,v in pairs(frame:GetChildren()) do
+			if v:IsA("TextButton") and v ~= collapseBtn and v ~= resizeSlider then
+				v.Visible = false
+			end
 		end
-		TweenService:Create(frame, TweenInfo.new(0.25), {Size = miniSize}):Play()
+		TweenService:Create(frame, TweenInfo.new(0.25), {Size = UDim2.new(frame.Size.X.Scale, frame.Size.X.Offset, 0, 38)}):Play()
 	else
 		collapseBtn.Text = "—"
-		for _,v in pairs(buttons) do
-			v.Visible = true
+		for _,v in pairs(frame:GetChildren()) do
+			if v:IsA("TextButton") and v ~= collapseBtn and v ~= resizeSlider then
+				v.Visible = true
+			end
 		end
-		TweenService:Create(frame, TweenInfo.new(0.25), {Size = fullSize}):Play()
 	end
 end)
 
 -- =====================
--- BUTTON ACTIONS
+-- RESIZE BUTTON (bas droite)
 -- =====================
+local resizeSlider = Instance.new("TextButton")
+resizeSlider.Parent = frame
+resizeSlider.Size = UDim2.new(0, 32, 0, 32)
+resizeSlider.Position = UDim2.new(1, -36, 1, -36)
+resizeSlider.Text = "↕"
+resizeSlider.Font = Enum.Font.SourceSansBold
+resizeSlider.TextSize = 20
+resizeSlider.BackgroundColor3 = Color3.fromRGB(15,15,15)
+resizeSlider.BorderSizePixel = 2
+resizeSlider.TextColor3 = Color3.new(1,1,1)
 
--- 🎭 EMOTE GUI
-b1.MouseButton1Click:Connect(function()
-	loadstring(game:HttpGet("https://raw.githubusercontent.com/Gazer-Ha/Free-emote/refs/heads/main/Delta%20mad%20stuffs"))()
+local isDragging = false
+local startPos
+local startSize
+
+resizeSlider.MouseButton1Down:Connect(function()
+	isDragging = true
+	startPos = UserInputService:GetMouseLocation()
+	startSize = frame.Size
 end)
 
-b2.MouseButton1Click:Connect(function()
-	loadstring(game:HttpGet("https://raw.githubusercontent.com/tienkhanh1/spicy/main/Chilli.lua"))()
+UserInputService.InputEnded:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		isDragging = false
+	end
 end)
 
--- 🍏 BLOX FRUIT
-b3.MouseButton1Click:Connect(function()
-	loadstring(game:HttpGet("https://raw.githubusercontent.com/tlredz/Scripts/refs/heads/main/main.luau"))()
-end)
-
-b4.MouseButton1Click:Connect(function()
-	loadstring(game:HttpGet("https://raw.githubusercontent.com/sabscripts063-cloud/Kdml-Not-Me/main/BlockPlayer"))()
-end)
-
-b5.MouseButton1Click:Connect(function()
-	loadstring(game:HttpGet("https://pastebin.com/raw/y7GnniTi"))()
-end)
-
-b6.MouseButton1Click:Connect(function()
-	loadstring(game:HttpGet("https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source"))()
-end)
-
--- 🏡 BROOKHAVEN — SP HUB
-b7.MouseButton1Click:Connect(function()
-	loadstring(game:HttpGet("https://raw.githubusercontent.com/as6cd0/SP_Hub/refs/heads/main/Brookhaven"))()
+UserInputService.InputChanged:Connect(function(input)
+	if isDragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+		local delta = UserInputService:GetMouseLocation() - startPos
+		local newX = math.clamp(startSize.X.Offset + delta.X, 150, 800)
+		local newY = math.clamp(startSize.Y.Offset + delta.Y, 150, 600)
+		frame.Size = UDim2.new(0, newX, 0, newY)
+	end
 end)
 
 -- =====================
--- RGB ANIMATION
+-- BUTTONS
 -- =====================
+local buttonNames = {
+	{"Emote GUI", "https://raw.githubusercontent.com/Gazer-Ha/Free-emote/refs/heads/main/Delta%20mad%20stuffs"},
+	{"Steal Brainrot", "https://raw.githubusercontent.com/tienkhanh1/spicy/main/Chilli.lua"},
+	{"Blox Fruit", "https://raw.githubusercontent.com/tlredz/Scripts/refs/heads/main/main.luau"},
+	{"Auto Block", "https://raw.githubusercontent.com/sabscripts063-cloud/Kdml-Not-Me/main/BlockPlayer"},
+	{"Fly GUI", "https://pastebin.com/raw/y7GnniTi"},
+	{"Admin Cmd", "https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source"},
+	{"Brookhaven", "https://raw.githubusercontent.com/as6cd0/SP_Hub/refs/heads/main/Brookhaven"},
+}
 
+local buttons = {}
+for i, info in ipairs(buttonNames) do
+	local btn = Instance.new("TextButton")
+	btn.Parent = frame
+	btn.Text = info[1]
+	btn.BackgroundColor3 = Color3.fromRGB(15,15,15)
+	btn.BorderSizePixel = 3
+	btn.Font = Enum.Font.SourceSans
+	btn.TextWrapped = true
+	btn.TextColor3 = Color3.new(1,1,1)
+	btn.MouseButton1Click:Connect(function()
+		loadstring(game:HttpGet(info[2]))()
+	end)
+	table.insert(buttons, btn)
+end
+
+-- =====================
+-- UPDATE BUTTONS LAYOUT + SIZE + TEXT
+-- =====================
+local function updateButtonLayout()
+	local frameWidth = frame.AbsoluteSize.X
+	local frameHeight = frame.AbsoluteSize.Y
+	local paddingX, paddingY = 12, 8
+	local cols = 2
+
+	local btnWidth = (frameWidth - (cols+1)*paddingX) / cols
+	local btnHeight = math.clamp(frameHeight/10, 25, 60) -- proportionnel
+	local textSize = math.clamp(btnHeight*0.5, 10, 24) -- texte proportionnel
+
+	for i, btn in ipairs(buttons) do
+		local col = (i-1) % cols
+		local row = math.floor((i-1)/cols)
+		btn.Size = UDim2.new(0, btnWidth, 0, btnHeight)
+		btn.Position = UDim2.new(0, paddingX + col*(btnWidth + paddingX), 0, 50 + row*(btnHeight + paddingY))
+		btn.TextSize = textSize
+	end
+end
+
+-- =====================
+-- RGB ANIMATION + BUTTON UPDATE
+-- =====================
 local hue = 0
-
 RunService.RenderStepped:Connect(function()
 	hue = (hue + 0.003) % 1
-	local rgb = Color3.fromHSV(hue, 1, 1)
+	local rgb = Color3.fromHSV(hue,1,1)
 
 	frame.BorderColor3 = rgb
 	titler.BorderColor3 = rgb
 	titler.TextColor3 = rgb
-	collapseFrame.BorderColor3 = rgb
 	collapseBtn.TextColor3 = rgb
-
-	for _,v in pairs(buttons) do
-		v.BorderColor3 = rgb
+	resizeSlider.TextColor3 = rgb
+	for _,btn in ipairs(buttons) do
+		btn.BorderColor3 = rgb
 	end
+
+	-- MAJ layout et taille des boutons et texte
+	updateButtonLayout()
 end)
