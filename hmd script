@@ -1,0 +1,191 @@
+--[[ WARNING: Use at your own risk ]]--
+
+-- =====================
+-- SERVICES
+-- =====================
+
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+
+-- =====================
+-- INSTANCES
+-- =====================
+
+local main = Instance.new("ScreenGui")
+local frame = Instance.new("Frame")
+local titler = Instance.new("TextLabel")
+
+local collapseFrame = Instance.new("Frame")
+local collapseBtn = Instance.new("TextButton")
+
+local buttons = {}
+local collapsed = false
+local fullSize = UDim2.new(0, 300, 0, 400)
+local miniSize = UDim2.new(0, 300, 0, 40)
+
+-- =====================
+-- GUI SETUP
+-- =====================
+
+main.Name = "HMD_MAIN"
+main.Parent = game.CoreGui
+
+frame.Parent = main
+frame.BackgroundColor3 = Color3.fromRGB(10,10,10)
+frame.BorderSizePixel = 3
+frame.Position = UDim2.new(0, 10, 0.3, 0)
+frame.Size = fullSize
+frame.Active = true
+frame.Draggable = true
+frame.ClipsDescendants = true
+
+titler.Parent = frame
+titler.Size = UDim2.new(1, 0, 0, 40)
+titler.BackgroundColor3 = Color3.fromRGB(10,10,10)
+titler.BorderSizePixel = 3
+titler.Text = "HMD HUB"
+titler.Font = Enum.Font.SourceSansBold
+titler.TextSize = 26
+titler.TextColor3 = Color3.new(1,1,1)
+
+-- =====================
+-- COLLAPSE (+ / - ENCADRÉ)
+-- =====================
+
+collapseFrame.Parent = titler
+collapseFrame.Size = UDim2.new(0, 32, 0, 32)
+collapseFrame.Position = UDim2.new(1, -36, 0.5, -16)
+collapseFrame.BackgroundColor3 = Color3.fromRGB(10,10,10)
+collapseFrame.BorderSizePixel = 2
+
+collapseBtn.Parent = collapseFrame
+collapseBtn.Size = UDim2.new(1, 0, 1, 0)
+collapseBtn.BackgroundTransparency = 1
+collapseBtn.Text = "—"
+collapseBtn.Font = Enum.Font.SourceSansBold
+collapseBtn.TextSize = 28
+collapseBtn.TextColor3 = Color3.new(1,1,1)
+
+-- =====================
+-- BUTTON CREATOR
+-- =====================
+
+local function createButton(text)
+	local btn = Instance.new("TextButton")
+	btn.Parent = frame
+	btn.Size = UDim2.new(0, 120, 0, 32)
+	btn.BackgroundColor3 = Color3.fromRGB(15,15,15)
+	btn.BorderSizePixel = 3
+	btn.Text = text
+	btn.Font = Enum.Font.SourceSans
+	btn.TextSize = 14
+	btn.TextWrapped = true
+	btn.TextColor3 = Color3.new(1,1,1)
+	table.insert(buttons, btn)
+	return btn
+end
+
+local b1 = createButton("Emote GUI")
+local b2 = createButton("Steal Brainrot")
+local b3 = createButton("Blox Fruit")
+local b4 = createButton("Auto Block")
+local b5 = createButton("Fly GUI")
+local b6 = createButton("Admin Cmd")
+local b7 = createButton("Brookhaven") -- 🏡 NOUVEAU BOUTON
+
+-- =====================
+-- GRID PLACEMENT
+-- =====================
+
+local startY = 60
+local paddingX = 20
+local paddingY = 15
+local colSpacing = 140
+
+for i,btn in ipairs(buttons) do
+	local col = (i - 1) % 2
+	local row = math.floor((i - 1) / 2)
+
+	btn.Position = UDim2.new(
+		0, paddingX + col * colSpacing,
+		0, startY + row * (32 + paddingY)
+	)
+end
+
+-- =====================
+-- COLLAPSE LOGIC
+-- =====================
+
+collapseBtn.MouseButton1Click:Connect(function()
+	collapsed = not collapsed
+
+	if collapsed then
+		collapseBtn.Text = "+"
+		for _,v in pairs(buttons) do
+			v.Visible = false
+		end
+		TweenService:Create(frame, TweenInfo.new(0.25), {Size = miniSize}):Play()
+	else
+		collapseBtn.Text = "—"
+		for _,v in pairs(buttons) do
+			v.Visible = true
+		end
+		TweenService:Create(frame, TweenInfo.new(0.25), {Size = fullSize}):Play()
+	end
+end)
+
+-- =====================
+-- BUTTON ACTIONS
+-- =====================
+
+-- 🎭 EMOTE GUI
+b1.MouseButton1Click:Connect(function()
+	loadstring(game:HttpGet("https://raw.githubusercontent.com/Gazer-Ha/Free-emote/refs/heads/main/Delta%20mad%20stuffs"))()
+end)
+
+b2.MouseButton1Click:Connect(function()
+	loadstring(game:HttpGet("https://raw.githubusercontent.com/tienkhanh1/spicy/main/Chilli.lua"))()
+end)
+
+-- 🍏 BLOX FRUIT
+b3.MouseButton1Click:Connect(function()
+	loadstring(game:HttpGet("https://raw.githubusercontent.com/tlredz/Scripts/refs/heads/main/main.luau"))()
+end)
+
+b4.MouseButton1Click:Connect(function()
+	loadstring(game:HttpGet("https://raw.githubusercontent.com/sabscripts063-cloud/Kdml-Not-Me/main/BlockPlayer"))()
+end)
+
+b5.MouseButton1Click:Connect(function()
+	loadstring(game:HttpGet("https://pastebin.com/raw/y7GnniTi"))()
+end)
+
+b6.MouseButton1Click:Connect(function()
+	loadstring(game:HttpGet("https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source"))()
+end)
+
+-- 🏡 BROOKHAVEN — SP HUB
+b7.MouseButton1Click:Connect(function()
+	loadstring(game:HttpGet("https://raw.githubusercontent.com/as6cd0/SP_Hub/refs/heads/main/Brookhaven"))()
+end)
+
+-- =====================
+-- RGB ANIMATION
+-- =====================
+
+local hue = 0
+
+RunService.RenderStepped:Connect(function()
+	hue = (hue + 0.003) % 1
+	local rgb = Color3.fromHSV(hue, 1, 1)
+
+	frame.BorderColor3 = rgb
+	titler.BorderColor3 = rgb
+	titler.TextColor3 = rgb
+	collapseFrame.BorderColor3 = rgb
+	collapseBtn.TextColor3 = rgb
+
+	for _,v in pairs(buttons) do
+		v.BorderColor3 = rgb
+	end
+end)
