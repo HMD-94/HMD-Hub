@@ -45,16 +45,20 @@ collapseBtn.BackgroundTransparency = 1
 collapseBtn.TextColor3 = Color3.new(1,1,1)
 
 local collapsed = false
+local miniSize = UDim2.new(0, 300, 0, 38)
+local lastSize = frame.Size
+
 collapseBtn.MouseButton1Click:Connect(function()
 	collapsed = not collapsed
 	if collapsed then
 		collapseBtn.Text = "+"
+		lastSize = frame.Size
 		for _,v in pairs(frame:GetChildren()) do
 			if v:IsA("TextButton") and v ~= collapseBtn and v ~= resizeSlider then
 				v.Visible = false
 			end
 		end
-		TweenService:Create(frame, TweenInfo.new(0.25), {Size = UDim2.new(frame.Size.X.Scale, frame.Size.X.Offset, 0, 38)}):Play()
+		TweenService:Create(frame, TweenInfo.new(0.25), {Size = miniSize}):Play()
 	else
 		collapseBtn.Text = "—"
 		for _,v in pairs(frame:GetChildren()) do
@@ -62,6 +66,7 @@ collapseBtn.MouseButton1Click:Connect(function()
 				v.Visible = true
 			end
 		end
+		frame.Size = lastSize
 	end
 end)
 
@@ -84,6 +89,17 @@ local startPos
 local startSize
 
 resizeSlider.MouseButton1Down:Connect(function()
+	if collapsed then
+		-- restaure la taille avant de redimensionner
+		collapsed = false
+		collapseBtn.Text = "—"
+		for _,v in pairs(frame:GetChildren()) do
+			if v:IsA("TextButton") and v ~= collapseBtn and v ~= resizeSlider then
+				v.Visible = true
+			end
+		end
+		frame.Size = lastSize
+	end
 	isDragging = true
 	startPos = UserInputService:GetMouseLocation()
 	startSize = frame.Size
@@ -143,8 +159,8 @@ local function updateButtonLayout()
 	local cols = 2
 
 	local btnWidth = (frameWidth - (cols+1)*paddingX) / cols
-	local btnHeight = math.clamp(frameHeight/10, 25, 60) -- proportionnel
-	local textSize = math.clamp(btnHeight*0.5, 10, 24) -- texte proportionnel
+	local btnHeight = math.clamp(frameHeight/10, 25, 60)
+	local textSize = math.clamp(btnHeight*0.5, 10, 24)
 
 	for i, btn in ipairs(buttons) do
 		local col = (i-1) % cols
@@ -172,6 +188,5 @@ RunService.RenderStepped:Connect(function()
 		btn.BorderColor3 = rgb
 	end
 
-	-- MAJ layout et taille des boutons et texte
 	updateButtonLayout()
 end)
