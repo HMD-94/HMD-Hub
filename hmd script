@@ -78,7 +78,7 @@ collapseBtn.MouseButton1Click:Connect(function()
 end)
 
 -- =====================
--- RESIZE BUTTON (bas droite)
+-- RESIZE BUTTON
 -- =====================
 local resizeSlider = Instance.new("TextButton")
 resizeSlider.Parent = frame
@@ -91,44 +91,23 @@ resizeSlider.BackgroundColor3 = Color3.fromRGB(15,15,15)
 resizeSlider.BorderSizePixel = 2
 resizeSlider.TextColor3 = Color3.new(1,1,1)
 
-local isDragging = false
-local startPos
-local startSize
-
-local function startResize(pos)
-	if collapsed then
-		collapsed = false
-		collapseBtn.Text = "—"
-		for _,v in pairs(frame:GetChildren()) do
-			if v:IsA("TextButton") and v ~= collapseBtn and v ~= resizeSlider then
-				v.Visible = true
-			end
-		end
-		frame.Size = lastSize
-	end
-	isDragging = true
-	startPos = pos
-	startSize = frame.Size
-end
-
-local function updateResize(pos)
-	if isDragging then
-		local delta = pos - startPos
-		local newX = math.clamp(startSize.X.Offset + delta.X, 150, 800)
-		local newY = math.clamp(startSize.Y.Offset + delta.Y, 150, 600)
-		frame.Size = UDim2.new(0, newX, 0, newY)
-	end
-end
+local isDragging, startPos, startSize = false
 
 resizeSlider.InputBegan:Connect(function(input)
 	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-		startResize(input.Position)
+		isDragging = true
+		startPos = input.Position
+		startSize = frame.Size
 	end
 end)
 
 UserInputService.InputChanged:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-		updateResize(input.Position)
+	if isDragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+		local delta = input.Position - startPos
+		frame.Size = UDim2.new(
+			0, math.clamp(startSize.X.Offset + delta.X, 200, 800),
+			0, math.clamp(startSize.Y.Offset + delta.Y, 200, 600)
+		)
 	end
 end)
 
@@ -139,7 +118,7 @@ UserInputService.InputEnded:Connect(function(input)
 end)
 
 -- =====================
--- BUTTONS
+-- BUTTONS (AJOUT DU WALKSPEED CHANGER)
 -- =====================
 local buttonNames = {
 	{"Emote GUI", "https://raw.githubusercontent.com/Gazer-Ha/Free-emote/refs/heads/main/Delta%20mad%20stuffs"},
@@ -149,10 +128,12 @@ local buttonNames = {
 	{"Fly GUI", "https://pastebin.com/raw/y7GnniTi"},
 	{"Admin Cmd", "https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source"},
 	{"Brookhaven", "https://raw.githubusercontent.com/as6cd0/SP_Hub/refs/heads/main/Brookhaven"},
+	{"Walkspeed Changer", "https://raw.githubusercontent.com/MrScripterrFr/Speed-Changer/main/Speed%20Changer"},
 }
 
 local buttons = {}
-for i, info in ipairs(buttonNames) do
+
+for _,info in ipairs(buttonNames) do
 	local btn = Instance.new("TextButton")
 	btn.Parent = frame
 	btn.Text = info[1]
@@ -168,29 +149,26 @@ for i, info in ipairs(buttonNames) do
 end
 
 -- =====================
--- UPDATE BUTTONS LAYOUT + SIZE + TEXT
+-- AUTO LAYOUT + SCALE
 -- =====================
-local function updateButtonLayout()
-	local frameWidth = frame.AbsoluteSize.X
-	local frameHeight = frame.AbsoluteSize.Y
-	local paddingX, paddingY = 12, 8
-	local cols = 2
+local function updateLayout()
+	local w,h = frame.AbsoluteSize.X, frame.AbsoluteSize.Y
+	local cols, padX, padY = 2, 12, 8
+	local bw = (w - (cols+1)*padX) / cols
+	local bh = math.clamp(h/10, 30, 65)
+	local ts = math.clamp(bh*0.5, 12, 24)
 
-	local btnWidth = (frameWidth - (cols+1)*paddingX) / cols
-	local btnHeight = math.clamp(frameHeight/10, 25, 60)
-	local textSize = math.clamp(btnHeight*0.5, 10, 24)
-
-	for i, btn in ipairs(buttons) do
-		local col = (i-1) % cols
-		local row = math.floor((i-1)/cols)
-		btn.Size = UDim2.new(0, btnWidth, 0, btnHeight)
-		btn.Position = UDim2.new(0, paddingX + col*(btnWidth + paddingX), 0, 50 + row*(btnHeight + paddingY))
-		btn.TextSize = textSize
+	for i,btn in ipairs(buttons) do
+		local c = (i-1)%cols
+		local r = math.floor((i-1)/cols)
+		btn.Size = UDim2.new(0,bw,0,bh)
+		btn.Position = UDim2.new(0,padX+c*(bw+padX),0,50+r*(bh+padY))
+		btn.TextSize = ts
 	end
 end
 
 -- =====================
--- RGB ANIMATION + BUTTON UPDATE
+-- RGB ANIMATION
 -- =====================
 local hue = 0
 RunService.RenderStepped:Connect(function()
@@ -202,9 +180,10 @@ RunService.RenderStepped:Connect(function()
 	titler.TextColor3 = rgb
 	collapseBtn.TextColor3 = rgb
 	resizeSlider.TextColor3 = rgb
-	for _,btn in ipairs(buttons) do
-		btn.BorderColor3 = rgb
+
+	for _,b in ipairs(buttons) do
+		b.BorderColor3 = rgb
 	end
 
-	updateButtonLayout()
+	updateLayout()
 end)
