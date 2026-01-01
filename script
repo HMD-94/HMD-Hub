@@ -1,1 +1,3 @@
 for script
+
+loadstring(game:HttpGet("https://rawscripts.net/raw/Universal-Script-Blox-fruit-script-79159"))()
