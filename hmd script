@@ -123,7 +123,7 @@ end)
 local buttonNames = {
 	{"Emote GUI", "https://raw.githubusercontent.com/Gazer-Ha/Free-emote/refs/heads/main/Delta%20mad%20stuffs"},
 	{"Steal Brainrot", "https://raw.githubusercontent.com/tienkhanh1/spicy/main/Chilli.lua"},
-	{"Blox Fruit", "https://raw.githubusercontent.com/tlredz/Scripts/refs/heads/main/main.luau"},
+	{"Blox Fruit", "loadstring(game:HttpGet("https://rawscripts.net/raw/Universal-Script-Blox-Fruit-Control-Update-78066"))()"},
 	{"Auto Block", "https://raw.githubusercontent.com/sabscripts063-cloud/Kdml-Not-Me/main/BlockPlayer"},
 	{"Fly GUI", "https://pastebin.com/raw/y7GnniTi"},
 	{"Admin Cmd", "https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source"},
