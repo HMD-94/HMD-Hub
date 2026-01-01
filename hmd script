@@ -55,6 +55,20 @@ local collapsed = false
 local miniSize = UDim2.new(0, 300, 0, 38)
 local lastSize = frame.Size
 
+-- =====================
+-- RESIZE BUTTON (BOTTOM RIGHT)
+-- =====================
+local resizeSlider = Instance.new("TextButton")
+resizeSlider.Parent = frame
+resizeSlider.Size = UDim2.new(0, 32, 0, 32)
+resizeSlider.Position = UDim2.new(1, -36, 1, -36)
+resizeSlider.Text = "↕"
+resizeSlider.Font = Enum.Font.SourceSansBold
+resizeSlider.TextSize = 20
+resizeSlider.BackgroundColor3 = Color3.fromRGB(15,15,15)
+resizeSlider.BorderSizePixel = 2
+resizeSlider.TextColor3 = Color3.new(1,1,1)
+
 collapseBtn.MouseButton1Click:Connect(function()
 	collapsed = not collapsed
 	if collapsed then
@@ -78,36 +92,45 @@ collapseBtn.MouseButton1Click:Connect(function()
 end)
 
 -- =====================
--- RESIZE BUTTON
+-- RESIZE LOGIC (PC + MOBILE)
 -- =====================
-local resizeSlider = Instance.new("TextButton")
-resizeSlider.Parent = frame
-resizeSlider.Size = UDim2.new(0, 32, 0, 32)
-resizeSlider.Position = UDim2.new(1, -36, 1, -36)
-resizeSlider.Text = "↕"
-resizeSlider.Font = Enum.Font.SourceSansBold
-resizeSlider.TextSize = 20
-resizeSlider.BackgroundColor3 = Color3.fromRGB(15,15,15)
-resizeSlider.BorderSizePixel = 2
-resizeSlider.TextColor3 = Color3.new(1,1,1)
+local isDragging = false
+local startPos, startSize
 
-local isDragging, startPos, startSize = false
+local function startResize(pos)
+	if collapsed then
+		collapsed = false
+		collapseBtn.Text = "—"
+		for _,v in pairs(frame:GetChildren()) do
+			if v:IsA("TextButton") and v ~= collapseBtn and v ~= resizeSlider then
+				v.Visible = true
+			end
+		end
+		frame.Size = lastSize
+	end
+	isDragging = true
+	startPos = pos
+	startSize = frame.Size
+end
+
+local function updateResize(pos)
+	if isDragging then
+		local delta = pos - startPos
+		local newX = math.clamp(startSize.X.Offset + delta.X, 180, 800)
+		local newY = math.clamp(startSize.Y.Offset + delta.Y, 180, 650)
+		frame.Size = UDim2.new(0, newX, 0, newY)
+	end
+end
 
 resizeSlider.InputBegan:Connect(function(input)
 	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-		isDragging = true
-		startPos = input.Position
-		startSize = frame.Size
+		startResize(input.Position)
 	end
 end)
 
 UserInputService.InputChanged:Connect(function(input)
-	if isDragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-		local delta = input.Position - startPos
-		frame.Size = UDim2.new(
-			0, math.clamp(startSize.X.Offset + delta.X, 200, 800),
-			0, math.clamp(startSize.Y.Offset + delta.Y, 200, 600)
-		)
+	if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+		updateResize(input.Position)
 	end
 end)
 
@@ -118,12 +141,13 @@ UserInputService.InputEnded:Connect(function(input)
 end)
 
 -- =====================
--- BUTTONS (AJOUT DU WALKSPEED CHANGER)
+-- BUTTONS + SCRIPTS
 -- =====================
-local buttonNames = {
+local buttonData = {
 	{"Emote GUI", "https://raw.githubusercontent.com/Gazer-Ha/Free-emote/refs/heads/main/Delta%20mad%20stuffs"},
 	{"Steal Brainrot", "https://raw.githubusercontent.com/tienkhanh1/spicy/main/Chilli.lua"},
-	{"Blox Fruit", "loadstring(game:HttpGet("https://rawscripts.net/raw/Universal-Script-Blox-Fruit-Control-Update-78066"))()"},
+	-- ✅ BLOX FRUIT MIS À JOUR
+	{"Blox Fruit", "https://rawscripts.net/raw/Universal-Script-Blox-Fruit-Control-Update-78066"},
 	{"Auto Block", "https://raw.githubusercontent.com/sabscripts063-cloud/Kdml-Not-Me/main/BlockPlayer"},
 	{"Fly GUI", "https://pastebin.com/raw/y7GnniTi"},
 	{"Admin Cmd", "https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source"},
@@ -132,8 +156,7 @@ local buttonNames = {
 }
 
 local buttons = {}
-
-for _,info in ipairs(buttonNames) do
+for _,info in ipairs(buttonData) do
 	local btn = Instance.new("TextButton")
 	btn.Parent = frame
 	btn.Text = info[1]
@@ -142,28 +165,37 @@ for _,info in ipairs(buttonNames) do
 	btn.Font = Enum.Font.SourceSans
 	btn.TextWrapped = true
 	btn.TextColor3 = Color3.new(1,1,1)
+
 	btn.MouseButton1Click:Connect(function()
 		loadstring(game:HttpGet(info[2]))()
 	end)
+
 	table.insert(buttons, btn)
 end
 
 -- =====================
 -- AUTO LAYOUT + SCALE
 -- =====================
-local function updateLayout()
-	local w,h = frame.AbsoluteSize.X, frame.AbsoluteSize.Y
-	local cols, padX, padY = 2, 12, 8
-	local bw = (w - (cols+1)*padX) / cols
-	local bh = math.clamp(h/10, 30, 65)
-	local ts = math.clamp(bh*0.5, 12, 24)
+local function updateButtons()
+	local w = frame.AbsoluteSize.X
+	local h = frame.AbsoluteSize.Y
+	local paddingX, paddingY = 12, 10
+	local cols = 2
+
+	local btnW = (w - (cols + 1) * paddingX) / cols
+	local btnH = math.clamp(h / 9, 28, 60)
+	local txtSize = math.clamp(btnH * 0.5, 12, 24)
 
 	for i,btn in ipairs(buttons) do
-		local c = (i-1)%cols
-		local r = math.floor((i-1)/cols)
-		btn.Size = UDim2.new(0,bw,0,bh)
-		btn.Position = UDim2.new(0,padX+c*(bw+padX),0,50+r*(bh+padY))
-		btn.TextSize = ts
+		local col = (i-1) % cols
+		local row = math.floor((i-1) / cols)
+
+		btn.Size = UDim2.new(0, btnW, 0, btnH)
+		btn.Position = UDim2.new(
+			0, paddingX + col * (btnW + paddingX),
+			0, 50 + row * (btnH + paddingY)
+		)
+		btn.TextSize = txtSize
 	end
 end
 
@@ -181,9 +213,9 @@ RunService.RenderStepped:Connect(function()
 	collapseBtn.TextColor3 = rgb
 	resizeSlider.TextColor3 = rgb
 
-	for _,b in ipairs(buttons) do
-		b.BorderColor3 = rgb
+	for _,btn in ipairs(buttons) do
+		btn.BorderColor3 = rgb
 	end
 
-	updateLayout()
+	updateButtons()
 end)
