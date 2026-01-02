@@ -153,6 +153,8 @@ local buttonData = {
 	{"Admin Cmd", "https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source"},
 	{"Brookhaven", "https://raw.githubusercontent.com/as6cd0/SP_Hub/refs/heads/main/Brookhaven"},
 	{"Walkspeed Changer", "https://raw.githubusercontent.com/MrScripterrFr/Speed-Changer/main/Speed%20Changer"},
+	{"Walkspeed Changer", "https://raw.githubusercontent.com/MrScripterrFr/Speed-Changer/main/Speed%20Changer"},
+	{"Aim bot + steal a brainrot", "https://raw.githubusercontent.com/xspeedHub0/Zlhub/main/ZLPVPreview.lua"},
 }
 
 local buttons = {}
