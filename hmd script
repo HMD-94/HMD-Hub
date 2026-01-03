@@ -154,6 +154,7 @@ local buttonData = {
 	{"Brookhaven", "https://raw.githubusercontent.com/as6cd0/SP_Hub/refs/heads/main/Brookhaven"},
 	{"Walkspeed Changer", "https://raw.githubusercontent.com/MrScripterrFr/Speed-Changer/main/Speed%20Changer"},
 	{"PVP Hub steal a brainrot", "https://raw.githubusercontent.com/xspeedHub0/Zlhub/main/ZLPVPreview.lua"},
+    {"walk Animation", "https://raw.githubusercontent.com/RubyBoo4life/Scripts/main/animations.vis"},
 }
 
 local buttons = {}
