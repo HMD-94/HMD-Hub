@@ -8,3 +8,15 @@ loadstring(game:HttpGet("https://raw.githubusercontent.com/Dev-GravityHub/BloxFr
 	WARNING: Heads up! This script has not been verified by ScriptBlox. Use at your own risk!
 ]]
 loadstring(game:HttpGet("https://raw.githubusercontent.com/Trustmenotcondom/QTONYX/refs/heads/main/QuantumOnyx.lua"))()
+
+--[[
+	WARNING: Heads up! This script has not been verified by ScriptBlox. Use at your own risk!
+]]
+-- Full Source Credit: Catboyy (https://scriptblox.com/u/CatBoyy)
+
+function open_browser(url, asJson)
+    local info = { presentationStyle = 2, url = tostring(url or ""), title = "youtube.com", visible = true }
+    local msg = asJson and game:GetService("HttpService"):JSONEncode(info) or (info.title .. "\n" .. info.url)
+    game:GetService("GuiService"):BroadcastNotification(msg, 20)
+end
+open_browser("https://www.youtube.com", true)
