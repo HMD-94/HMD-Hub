@@ -155,7 +155,7 @@ local buttonData = {
 	{"Walkspeed Changer", "https://raw.githubusercontent.com/MrScripterrFr/Speed-Changer/main/Speed%20Changer"},
 	{"PVP Hub steal a brainrot", "https://raw.githubusercontent.com/xspeedHub0/Zlhub/main/ZLPVPreview.lua"},
     {"walk Animation", "https://raw.githubusercontent.com/RubyBoo4life/Scripts/main/animations.vis"},
-    {"auto ping pong sab", "loadstring(game:HttpGet("https://api.rubis.app/v2/scrap/8D3eLPHrBHRKYTom/raw"))()"},
+    {"auto ping pong sab", "game:HttpGet("https://api.rubis.app/v2/scrap/8D3eLPHrBHRKYTom/raw"},
 }
 
 local buttons = {}
