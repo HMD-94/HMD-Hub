@@ -1,8 +1,8 @@
 --[[ WARNING: Use at your own risk ]]--
-
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
+local HttpService = game:GetService("HttpService")
 
 -- =====================
 -- REMOVE OLD GUI IF EXISTS
@@ -12,18 +12,66 @@ if game.CoreGui:FindFirstChild("HMD_MAIN") then
 end
 
 -- =====================
+-- SETTINGS & DATA STORAGE
+-- =====================
+local settings = {
+	theme = "RGB",
+	viewMode = "grid",
+	savedPosition = nil,
+	savedSize = nil,
+	favorites = {},
+	recentlyUsed = {},
+	keybindEnabled = true,
+	toggleKey = Enum.KeyCode.RightControl
+}
+
+local function saveSettings()
+	writefile("HMD_Settings.json", HttpService:JSONEncode(settings))
+end
+
+local function loadSettings()
+	if isfile and isfile("HMD_Settings.json") then
+		local success, data = pcall(function()
+			return HttpService:JSONDecode(readfile("HMD_Settings.json"))
+		end)
+		if success then
+			for k,v in pairs(data) do
+				settings[k] = v
+			end
+		end
+	end
+end
+
+if readfile and writefile and isfile then
+	loadSettings()
+end
+
+-- =====================
+-- THEME SYSTEM
+-- =====================
+local themes = {
+	RGB = {primary = Color3.new(1,1,1), animated = true},
+	Dark = {primary = Color3.fromRGB(100,100,255), animated = false},
+	Red = {primary = Color3.fromRGB(255,50,50), animated = false},
+	Green = {primary = Color3.fromRGB(50,255,100), animated = false},
+	Purple = {primary = Color3.fromRGB(200,50,255), animated = false},
+	Ocean = {primary = Color3.fromRGB(50,150,255), animated = false},
+}
+
+-- =====================
 -- GUI SETUP
 -- =====================
 local main = Instance.new("ScreenGui")
 main.Name = "HMD_MAIN"
 main.Parent = game.CoreGui
+main.ResetOnSpawn = false
 
 local frame = Instance.new("Frame")
 frame.Parent = main
 frame.BackgroundColor3 = Color3.fromRGB(10,10,10)
 frame.BorderSizePixel = 3
-frame.Position = UDim2.new(0, 10, 0.3, 0)
-frame.Size = UDim2.new(0, 300, 0, 400)
+frame.Position = settings.savedPosition or UDim2.new(0, 10, 0.3, 0)
+frame.Size = settings.savedSize or UDim2.new(0, 350, 0, 500)
 frame.Active = true
 frame.Draggable = true
 frame.ClipsDescendants = true
@@ -37,6 +85,133 @@ titler.Text = "HMD HUB"
 titler.Font = Enum.Font.SourceSansBold
 titler.TextSize = 26
 titler.TextColor3 = Color3.new(1,1,1)
+titler.ZIndex = 2
+
+-- =====================
+-- TOP BUTTON BAR
+-- =====================
+local buttonBar = Instance.new("Frame")
+buttonBar.Parent = frame
+buttonBar.Position = UDim2.new(0, 0, 0, 40)
+buttonBar.Size = UDim2.new(1, 0, 0, 35)
+buttonBar.BackgroundColor3 = Color3.fromRGB(15,15,15)
+buttonBar.BorderSizePixel = 0
+buttonBar.ZIndex = 2
+
+local function createTopButton(text, position, width)
+	local btn = Instance.new("TextButton")
+	btn.Parent = buttonBar
+	btn.Size = UDim2.new(0, width, 0, 28)
+	btn.Position = UDim2.new(0, position, 0, 3)
+	btn.Text = text
+	btn.Font = Enum.Font.SourceSans
+	btn.TextSize = 14
+	btn.BackgroundColor3 = Color3.fromRGB(25,25,25)
+	btn.BorderSizePixel = 2
+	btn.TextColor3 = Color3.new(1,1,1)
+	btn.ZIndex = 3
+	return btn
+end
+
+local allBtn = createTopButton("All", 5, 45)
+local favBtn = createTopButton("★", 55, 35)
+local recentBtn = createTopButton("Recent", 95, 55)
+local settingsBtn = createTopButton("⚙", 155, 35)
+local viewToggle = createTopButton("Grid", 195, 50)
+
+-- =====================
+-- SEARCH BAR
+-- =====================
+local searchBar = Instance.new("TextBox")
+searchBar.Parent = frame
+searchBar.Position = UDim2.new(0, 10, 0, 80)
+searchBar.Size = UDim2.new(1, -20, 0, 30)
+searchBar.BackgroundColor3 = Color3.fromRGB(20,20,20)
+searchBar.BorderSizePixel = 2
+searchBar.Text = ""
+searchBar.PlaceholderText = "Search scripts..."
+searchBar.Font = Enum.Font.SourceSans
+searchBar.TextSize = 16
+searchBar.TextColor3 = Color3.new(1,1,1)
+searchBar.PlaceholderColor3 = Color3.fromRGB(150,150,150)
+searchBar.ClearTextOnFocus = false
+searchBar.ZIndex = 2
+
+-- =====================
+-- SCROLLING FRAME
+-- =====================
+local scrollFrame = Instance.new("ScrollingFrame")
+scrollFrame.Parent = frame
+scrollFrame.Position = UDim2.new(0, 0, 0, 115)
+scrollFrame.Size = UDim2.new(1, 0, 1, -115)
+scrollFrame.BackgroundTransparency = 1
+scrollFrame.BorderSizePixel = 0
+scrollFrame.ScrollBarThickness = 8
+scrollFrame.ScrollBarImageColor3 = Color3.fromRGB(255,255,255)
+scrollFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
+scrollFrame.ClipsDescendants = true
+scrollFrame.Active = true
+
+-- =====================
+-- SETTINGS PANEL
+-- =====================
+local settingsPanel = Instance.new("Frame")
+settingsPanel.Parent = frame
+settingsPanel.Position = UDim2.new(0, 0, 0, 115)
+settingsPanel.Size = UDim2.new(1, 0, 1, -115)
+settingsPanel.BackgroundColor3 = Color3.fromRGB(15,15,15)
+settingsPanel.BorderSizePixel = 0
+settingsPanel.Visible = false
+settingsPanel.ZIndex = 5
+
+local settingsScroll = Instance.new("ScrollingFrame")
+settingsScroll.Parent = settingsPanel
+settingsScroll.Size = UDim2.new(1, 0, 1, 0)
+settingsScroll.BackgroundTransparency = 1
+settingsScroll.BorderSizePixel = 0
+settingsScroll.ScrollBarThickness = 8
+settingsScroll.CanvasSize = UDim2.new(0, 0, 0, 400)
+settingsScroll.ZIndex = 5
+
+-- =====================
+-- NOTIFICATION SYSTEM
+-- =====================
+local notificationFrame = Instance.new("Frame")
+notificationFrame.Parent = main
+notificationFrame.Position = UDim2.new(1, -220, 0, 10)
+notificationFrame.Size = UDim2.new(0, 210, 0, 0)
+notificationFrame.BackgroundTransparency = 1
+notificationFrame.ZIndex = 100
+
+local function showNotification(message, isError)
+	local notif = Instance.new("Frame")
+	notif.Parent = notificationFrame
+	notif.Size = UDim2.new(1, 0, 0, 50)
+	notif.BackgroundColor3 = isError and Color3.fromRGB(200,50,50) or Color3.fromRGB(50,200,100)
+	notif.BorderSizePixel = 2
+	notif.BorderColor3 = Color3.new(1,1,1)
+	notif.Position = UDim2.new(0, 0, 0, #notificationFrame:GetChildren() * 55)
+	notif.ZIndex = 101
+	
+	local label = Instance.new("TextLabel")
+	label.Parent = notif
+	label.Size = UDim2.new(1, -10, 1, 0)
+	label.Position = UDim2.new(0, 5, 0, 0)
+	label.BackgroundTransparency = 1
+	label.Text = message
+	label.Font = Enum.Font.SourceSans
+	label.TextSize = 14
+	label.TextColor3 = Color3.new(1,1,1)
+	label.TextWrapped = true
+	label.ZIndex = 102
+	
+	task.delay(3, function()
+		TweenService:Create(notif, TweenInfo.new(0.3), {BackgroundTransparency = 1}):Play()
+		TweenService:Create(label, TweenInfo.new(0.3), {TextTransparency = 1}):Play()
+		task.wait(0.3)
+		notif:Destroy()
+	end)
+end
 
 -- =====================
 -- COLLAPSE BUTTON
@@ -50,13 +225,14 @@ collapseBtn.Font = Enum.Font.SourceSansBold
 collapseBtn.TextSize = 28
 collapseBtn.BackgroundTransparency = 1
 collapseBtn.TextColor3 = Color3.new(1,1,1)
+collapseBtn.ZIndex = 10
 
 local collapsed = false
-local miniSize = UDim2.new(0, 300, 0, 38)
+local miniSize = UDim2.new(0, 350, 0, 40)
 local lastSize = frame.Size
 
 -- =====================
--- RESIZE BUTTON (BOTTOM RIGHT)
+-- RESIZE BUTTON
 -- =====================
 local resizeSlider = Instance.new("TextButton")
 resizeSlider.Parent = frame
@@ -68,156 +244,533 @@ resizeSlider.TextSize = 20
 resizeSlider.BackgroundColor3 = Color3.fromRGB(15,15,15)
 resizeSlider.BorderSizePixel = 2
 resizeSlider.TextColor3 = Color3.new(1,1,1)
+resizeSlider.ZIndex = 10
 
 collapseBtn.MouseButton1Click:Connect(function()
 	collapsed = not collapsed
 	if collapsed then
 		collapseBtn.Text = "+"
 		lastSize = frame.Size
-		for _,v in pairs(frame:GetChildren()) do
-			if v:IsA("TextButton") and v ~= collapseBtn and v ~= resizeSlider then
-				v.Visible = false
-			end
-		end
+		scrollFrame.Visible = false
+		buttonBar.Visible = false
+		searchBar.Visible = false
+		settingsPanel.Visible = false
+		resizeSlider.Visible = false
 		TweenService:Create(frame, TweenInfo.new(0.25), {Size = miniSize}):Play()
 	else
 		collapseBtn.Text = "—"
-		for _,v in pairs(frame:GetChildren()) do
-			if v:IsA("TextButton") and v ~= collapseBtn and v ~= resizeSlider then
-				v.Visible = true
-			end
-		end
+		scrollFrame.Visible = not settingsPanel.Visible
+		buttonBar.Visible = true
+		searchBar.Visible = true
+		resizeSlider.Visible = true
 		frame.Size = lastSize
 	end
 end)
 
 -- =====================
--- RESIZE LOGIC (PC + MOBILE)
+-- RESIZE LOGIC
 -- =====================
-local isDragging = false
-local startPos, startSize
+local resizing = false
+local resizeConnection = nil
+local resizeEndConnection = nil
 
-local function startResize(pos)
+local function setupResize(inputObject)
 	if collapsed then
 		collapsed = false
 		collapseBtn.Text = "—"
-		for _,v in pairs(frame:GetChildren()) do
-			if v:IsA("TextButton") and v ~= collapseBtn and v ~= resizeSlider then
-				v.Visible = true
-			end
-		end
+		scrollFrame.Visible = not settingsPanel.Visible
+		buttonBar.Visible = true
+		searchBar.Visible = true
+		resizeSlider.Visible = true
 		frame.Size = lastSize
 	end
-	isDragging = true
-	startPos = pos
-	startSize = frame.Size
-end
-
-local function updateResize(pos)
-	if isDragging then
-		local delta = pos - startPos
-		local newX = math.clamp(startSize.X.Offset + delta.X, 180, 800)
-		local newY = math.clamp(startSize.Y.Offset + delta.Y, 180, 650)
-		frame.Size = UDim2.new(0, newX, 0, newY)
-	end
+	
+	resizing = true
+	frame.Draggable = false
+	
+	local startSize = frame.Size
+	local startPos = inputObject.Position
+	
+	if resizeConnection then resizeConnection:Disconnect() end
+	if resizeEndConnection then resizeEndConnection:Disconnect() end
+	
+	resizeConnection = UserInputService.InputChanged:Connect(function(input)
+		if resizing and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+			local delta = input.Position - startPos
+			local newX = math.clamp(startSize.X.Offset + delta.X, 300, 900)
+			local newY = math.clamp(startSize.Y.Offset + delta.Y, 250, 700)
+			frame.Size = UDim2.new(0, newX, 0, newY)
+		end
+	end)
+	
+	resizeEndConnection = UserInputService.InputEnded:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+			resizing = false
+			frame.Draggable = true
+			settings.savedSize = frame.Size
+			if writefile then saveSettings() end
+			if resizeConnection then
+				resizeConnection:Disconnect()
+				resizeConnection = nil
+			end
+			if resizeEndConnection then
+				resizeEndConnection:Disconnect()
+				resizeEndConnection = nil
+			end
+		end
+	end)
 end
 
 resizeSlider.InputBegan:Connect(function(input)
 	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-		startResize(input.Position)
-	end
-end)
-
-UserInputService.InputChanged:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-		updateResize(input.Position)
-	end
-end)
-
-UserInputService.InputEnded:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-		isDragging = false
+		setupResize(input)
 	end
 end)
 
 -- =====================
--- BUTTONS + SCRIPTS
+-- BUTTONS + SCRIPTS DATA
 -- =====================
 local buttonData = {
-	{"Emote GUI", "https://raw.githubusercontent.com/Gazer-Ha/Free-emote/refs/heads/main/Delta%20mad%20stuffs"},
-	{"Steal Brainrot", "https://raw.githubusercontent.com/tienkhanh1/spicy/main/Chilli.lua"},
-	-- ✅ BLOX FRUIT MIS À JOUR
-	{"Blox Fruit", "https://rawscripts.net/raw/Universal-Script-Blox-Fruit-Control-Update-78066"},
-	{"Auto Block", "https://raw.githubusercontent.com/sabscripts063-cloud/Kdml-Not-Me/main/BlockPlayer"},
-	{"Fly GUI", "https://pastebin.com/raw/y7GnniTi"},
-	{"Admin Cmd", "https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source"},
-	{"Brookhaven", "https://raw.githubusercontent.com/as6cd0/SP_Hub/refs/heads/main/Brookhaven"},
-	{"Walkspeed Changer", "https://raw.githubusercontent.com/MrScripterrFr/Speed-Changer/main/Speed%20Changer"},
-	{"PVP Hub steal a brainrot", "https://raw.githubusercontent.com/xspeedHub0/Zlhub/main/ZLPVPreview.lua"},
-    {"walk Animation", "https://raw.githubusercontent.com/RubyBoo4life/Scripts/main/animations.vis"},
+	{name = "Emote GUI", url = "https://raw.githubusercontent.com/Gazer-Ha/Free-emote/refs/heads/main/Delta%20mad%20stuffs", category = "Animation", description = "Free emote animations"},
+	{name = "Steal Brainrot", url = "https://raw.githubusercontent.com/tienkhanh1/spicy/main/Chilli.lua", category = "Tools", description = "Brainrot stealer tool"},
+	{name = "Blox Fruit", url = "https://rawscripts.net/raw/Universal-Script-Blox-Fruit-Control-Update-78066", category = "Games", description = "Blox Fruit control script"},
+	{name = "Auto Block", url = "https://raw.githubusercontent.com/sabscripts063-cloud/Kdml-Not-Me/main/BlockPlayer", category = "Tools", description = "Auto block players"},
+	{name = "Fly GUI", url = "https://pastebin.com/raw/y7GnniTi", category = "Tools", description = "Simple fly GUI"},
+	{name = "Admin Cmd", url = "https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source", category = "Tools", description = "Infinite Yield admin commands"},
+	{name = "Brookhaven", url = "https://raw.githubusercontent.com/as6cd0/SP_Hub/refs/heads/main/Brookhaven", category = "Games", description = "Brookhaven RP script"},
+	{name = "Walkspeed Changer", url = "https://raw.githubusercontent.com/MrScripterrFr/Speed-Changer/main/Speed%20Changer", category = "Tools", description = "Change walkspeed"},
+	{name = "PVP Hub", url = "https://raw.githubusercontent.com/xspeedHub0/Zlhub/main/ZLPVPreview.lua", category = "Games", description = "PVP Hub for brainrot"},
+	{name = "Walk Animation", url = "https://raw.githubusercontent.com/RubyBoo4life/Scripts/main/animations.vis", category = "Animation", description = "Custom walk animations"},
 }
 
 local buttons = {}
-for _,info in ipairs(buttonData) do
+local currentFilter = "all"
+
+-- =====================
+-- BUTTON CREATION
+-- =====================
+local function createButton(data)
 	local btn = Instance.new("TextButton")
-	btn.Parent = frame
-	btn.Text = info[1]
+	btn.Text = data.name
 	btn.BackgroundColor3 = Color3.fromRGB(15,15,15)
 	btn.BorderSizePixel = 3
 	btn.Font = Enum.Font.SourceSans
 	btn.TextWrapped = true
 	btn.TextColor3 = Color3.new(1,1,1)
-
-	btn.MouseButton1Click:Connect(function()
-		loadstring(game:HttpGet(info[2]))()
+	btn.ClipsDescendants = true
+	
+	local isFavorite = table.find(settings.favorites, data.name) ~= nil
+	
+	-- Star icon for favorites
+	local star = Instance.new("TextLabel")
+	star.Parent = btn
+	star.Size = UDim2.new(0, 20, 0, 20)
+	star.Position = UDim2.new(1, -22, 0, 2)
+	star.BackgroundTransparency = 1
+	star.Text = isFavorite and "★" or "☆"
+	star.TextSize = 18
+	star.TextColor3 = Color3.fromRGB(255, 215, 0)
+	star.ZIndex = 5
+	
+	-- Tooltip
+	local tooltip = Instance.new("TextLabel")
+	tooltip.Parent = btn
+	tooltip.Size = UDim2.new(1, 0, 0, 0)
+	tooltip.Position = UDim2.new(0, 0, 1, 0)
+	tooltip.BackgroundColor3 = Color3.fromRGB(5,5,5)
+	tooltip.BorderSizePixel = 1
+	tooltip.Text = data.description or "No description"
+	tooltip.TextSize = 12
+	tooltip.Font = Enum.Font.SourceSans
+	tooltip.TextColor3 = Color3.new(1,1,1)
+	tooltip.TextWrapped = true
+	tooltip.Visible = false
+	tooltip.ZIndex = 100
+	
+	btn.MouseEnter:Connect(function()
+		tooltip.Size = UDim2.new(1, 0, 0, 30)
+		tooltip.Visible = true
 	end)
+	
+	btn.MouseLeave:Connect(function()
+		tooltip.Visible = false
+	end)
+	
+	-- Click to run script
+	btn.MouseButton1Click:Connect(function()
+		local success, err = pcall(function()
+			loadstring(game:HttpGet(data.url))()
+		end)
+		
+		if success then
+			showNotification("✓ " .. data.name .. " loaded!", false)
+			-- Add to recently used
+			table.insert(settings.recentlyUsed, 1, data.name)
+			if #settings.recentlyUsed > 10 then
+				table.remove(settings.recentlyUsed, 11)
+			end
+			if writefile then saveSettings() end
+		else
+			showNotification("✗ Failed to load " .. data.name, true)
+		end
+	end)
+	
+	-- Right click or long press to favorite (mobile support)
+	local holdTime = 0
+	local holding = false
+	
+	btn.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton2 or input.UserInputType == Enum.UserInputType.Touch then
+			holding = true
+			holdTime = 0
+			task.spawn(function()
+				while holding do
+					task.wait(0.1)
+					holdTime = holdTime + 0.1
+					if holdTime >= 0.5 and input.UserInputType == Enum.UserInputType.Touch then
+						holding = false
+						-- Toggle favorite
+						local idx = table.find(settings.favorites, data.name)
+						if idx then
+							table.remove(settings.favorites, idx)
+							star.Text = "☆"
+							showNotification("Removed from favorites", false)
+						else
+							table.insert(settings.favorites, data.name)
+							star.Text = "★"
+							showNotification("Added to favorites", false)
+						end
+						if writefile then saveSettings() end
+						break
+					end
+				end
+			end)
+		end
+	end)
+	
+	btn.InputEnded:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton2 then
+			-- Toggle favorite
+			local idx = table.find(settings.favorites, data.name)
+			if idx then
+				table.remove(settings.favorites, idx)
+				star.Text = "☆"
+				showNotification("Removed from favorites", false)
+			else
+				table.insert(settings.favorites, data.name)
+				star.Text = "★"
+				showNotification("Added to favorites", false)
+			end
+			if writefile then saveSettings() end
+		end
+		holding = false
+	end)
+	
+	return btn, data
+end
 
-	table.insert(buttons, btn)
+for _, data in ipairs(buttonData) do
+	local btn, btnData = createButton(data)
+	btn.Parent = scrollFrame
+	table.insert(buttons, {button = btn, data = btnData})
 end
 
 -- =====================
--- AUTO LAYOUT + SCALE
+-- SETTINGS PANEL CONTENT
 -- =====================
-local function updateButtons()
-	local w = frame.AbsoluteSize.X
-	local h = frame.AbsoluteSize.Y
+local yOffset = 10
+
+local function createSettingLabel(text, y)
+	local label = Instance.new("TextLabel")
+	label.Parent = settingsScroll
+	label.Size = UDim2.new(1, -20, 0, 25)
+	label.Position = UDim2.new(0, 10, 0, y)
+	label.BackgroundTransparency = 1
+	label.Text = text
+	label.Font = Enum.Font.SourceSansBold
+	label.TextSize = 16
+	label.TextColor3 = Color3.new(1,1,1)
+	label.TextXAlignment = Enum.TextXAlignment.Left
+	label.ZIndex = 6
+	return label
+end
+
+local function createThemeButton(themeName, y)
+	local btn = Instance.new("TextButton")
+	btn.Parent = settingsScroll
+	btn.Size = UDim2.new(0, 80, 0, 30)
+	btn.Position = UDim2.new(0, 10 + ((y - 1) % 4) * 85, 0, 70 + math.floor((y - 1) / 4) * 35)
+	btn.Text = themeName
+	btn.Font = Enum.Font.SourceSans
+	btn.TextSize = 14
+	btn.BackgroundColor3 = Color3.fromRGB(25,25,25)
+	btn.BorderSizePixel = 2
+	btn.TextColor3 = Color3.new(1,1,1)
+	btn.ZIndex = 6
+	
+	btn.MouseButton1Click:Connect(function()
+		settings.theme = themeName
+		if writefile then saveSettings() end
+		showNotification("Theme changed to " .. themeName, false)
+	end)
+	
+	return btn
+end
+
+createSettingLabel("═══ THEME SELECTION ═══", yOffset)
+yOffset = yOffset + 30
+
+local themeIdx = 1
+for themeName, _ in pairs(themes) do
+	createThemeButton(themeName, themeIdx)
+	themeIdx = themeIdx + 1
+end
+
+yOffset = yOffset + math.ceil(themeIdx / 4) * 35 + 10
+
+createSettingLabel("═══ KEYBIND ═══", yOffset)
+yOffset = yOffset + 30
+
+local keybindLabel = Instance.new("TextLabel")
+keybindLabel.Parent = settingsScroll
+keybindLabel.Size = UDim2.new(1, -20, 0, 25)
+keybindLabel.Position = UDim2.new(0, 10, 0, yOffset)
+keybindLabel.BackgroundColor3 = Color3.fromRGB(25,25,25)
+keybindLabel.BorderSizePixel = 2
+keybindLabel.Text = "Toggle Key: " .. settings.toggleKey.Name
+keybindLabel.Font = Enum.Font.SourceSans
+keybindLabel.TextSize = 14
+keybindLabel.TextColor3 = Color3.new(1,1,1)
+keybindLabel.ZIndex = 6
+
+yOffset = yOffset + 35
+
+local changeKeyBtn = Instance.new("TextButton")
+changeKeyBtn.Parent = settingsScroll
+changeKeyBtn.Size = UDim2.new(0, 150, 0, 30)
+changeKeyBtn.Position = UDim2.new(0, 10, 0, yOffset)
+changeKeyBtn.Text = "Change Keybind"
+changeKeyBtn.Font = Enum.Font.SourceSans
+changeKeyBtn.TextSize = 14
+changeKeyBtn.BackgroundColor3 = Color3.fromRGB(50,100,200)
+changeKeyBtn.BorderSizePixel = 2
+changeKeyBtn.TextColor3 = Color3.new(1,1,1)
+changeKeyBtn.ZIndex = 6
+
+changeKeyBtn.MouseButton1Click:Connect(function()
+	changeKeyBtn.Text = "Press any key..."
+	local connection
+	connection = UserInputService.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.Keyboard then
+			settings.toggleKey = input.KeyCode
+			keybindLabel.Text = "Toggle Key: " .. input.KeyCode.Name
+			changeKeyBtn.Text = "Change Keybind"
+			if writefile then saveSettings() end
+			connection:Disconnect()
+		end
+	end)
+end)
+
+yOffset = yOffset + 40
+
+local resetBtn = Instance.new("TextButton")
+resetBtn.Parent = settingsScroll
+resetBtn.Size = UDim2.new(0, 150, 0, 30)
+resetBtn.Position = UDim2.new(0, 10, 0, yOffset)
+resetBtn.Text = "Reset All Settings"
+resetBtn.Font = Enum.Font.SourceSans
+resetBtn.TextSize = 14
+resetBtn.BackgroundColor3 = Color3.fromRGB(200,50,50)
+resetBtn.BorderSizePixel = 2
+resetBtn.TextColor3 = Color3.new(1,1,1)
+resetBtn.ZIndex = 6
+
+resetBtn.MouseButton1Click:Connect(function()
+	settings = {
+		theme = "RGB",
+		viewMode = "grid",
+		savedPosition = nil,
+		savedSize = nil,
+		favorites = {},
+		recentlyUsed = {},
+		keybindEnabled = true,
+		toggleKey = Enum.KeyCode.RightControl
+	}
+	if writefile then saveSettings() end
+	showNotification("Settings reset!", false)
+end)
+
+settingsScroll.CanvasSize = UDim2.new(0, 0, 0, yOffset + 50)
+
+-- =====================
+-- FILTER & LAYOUT SYSTEM
+-- =====================
+local function filterButtons(filter, searchText)
+	local visibleButtons = {}
+	searchText = searchText and searchText:lower() or ""
+	
+	for _, btnInfo in ipairs(buttons) do
+		local visible = true
+		
+		-- Filter by category
+		if filter == "favorites" then
+			visible = table.find(settings.favorites, btnInfo.data.name) ~= nil
+		elseif filter == "recent" then
+			visible = table.find(settings.recentlyUsed, btnInfo.data.name) ~= nil
+		end
+		
+		-- Filter by search
+		if visible and searchText ~= "" then
+			visible = btnInfo.data.name:lower():find(searchText) ~= nil
+		end
+		
+		if visible then
+			table.insert(visibleButtons, btnInfo)
+		end
+		
+		btnInfo.button.Visible = visible
+	end
+	
+	return visibleButtons
+end
+
+local function updateLayout()
+	local visibleButtons = filterButtons(currentFilter, searchBar.Text)
+	local w = scrollFrame.AbsoluteSize.X
 	local paddingX, paddingY = 12, 10
-	local cols = 2
-
-	local btnW = (w - (cols + 1) * paddingX) / cols
-	local btnH = math.clamp(h / 9, 28, 60)
-	local txtSize = math.clamp(btnH * 0.5, 12, 24)
-
-	for i,btn in ipairs(buttons) do
-		local col = (i-1) % cols
-		local row = math.floor((i-1) / cols)
-
-		btn.Size = UDim2.new(0, btnW, 0, btnH)
-		btn.Position = UDim2.new(
-			0, paddingX + col * (btnW + paddingX),
-			0, 50 + row * (btnH + paddingY)
-		)
-		btn.TextSize = txtSize
+	local scrollbarWidth = 12
+	
+	if settings.viewMode == "grid" then
+		local cols = 2
+		local btnW = (w - scrollbarWidth - (cols + 1) * paddingX) / cols
+		local btnH = 50
+		local txtSize = math.clamp(btnH * 0.36, 14, 20)
+		
+		for i, btnInfo in ipairs(visibleButtons) do
+			local col = (i-1) % cols
+			local row = math.floor((i-1) / cols)
+			btnInfo.button.Size = UDim2.new(0, btnW, 0, btnH)
+			btnInfo.button.Position = UDim2.new(
+				0, paddingX + col * (btnW + paddingX),
+				0, paddingY + row * (btnH + paddingY)
+			)
+			btnInfo.button.TextSize = txtSize
+		end
+		
+		local totalRows = math.ceil(#visibleButtons / cols)
+		local canvasHeight = paddingY + totalRows * (btnH + paddingY) + 10
+		scrollFrame.CanvasSize = UDim2.new(0, 0, 0, canvasHeight)
+	else
+		-- List view
+		local btnW = w - scrollbarWidth - 20
+		local btnH = 35
+		local txtSize = 16
+		
+		for i, btnInfo in ipairs(visibleButtons) do
+			btnInfo.button.Size = UDim2.new(0, btnW, 0, btnH)
+			btnInfo.button.Position = UDim2.new(0, 10, 0, (i-1) * (btnH + 5) + 5)
+			btnInfo.button.TextSize = txtSize
+		end
+		
+		local canvasHeight = #visibleButtons * (btnH + 5) + 10
+		scrollFrame.CanvasSize = UDim2.new(0, 0, 0, canvasHeight)
 	end
 end
 
 -- =====================
--- RGB ANIMATION
+-- BUTTON BAR ACTIONS
+-- =====================
+allBtn.MouseButton1Click:Connect(function()
+	currentFilter = "all"
+	updateLayout()
+end)
+
+favBtn.MouseButton1Click:Connect(function()
+	currentFilter = "favorites"
+	updateLayout()
+end)
+
+recentBtn.MouseButton1Click:Connect(function()
+	currentFilter = "recent"
+	updateLayout()
+end)
+
+settingsBtn.MouseButton1Click:Connect(function()
+	settingsPanel.Visible = not settingsPanel.Visible
+	scrollFrame.Visible = not settingsPanel.Visible
+end)
+
+viewToggle.MouseButton1Click:Connect(function()
+	if settings.viewMode == "grid" then
+		settings.viewMode = "list"
+		viewToggle.Text = "List"
+	else
+		settings.viewMode = "grid"
+		viewToggle.Text = "Grid"
+	end
+	if writefile then saveSettings() end
+	updateLayout()
+end)
+
+searchBar:GetPropertyChangedSignal("Text"):Connect(function()
+	updateLayout()
+end)
+
+-- =====================
+-- KEYBIND TOGGLE
+-- =====================
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+	if not gameProcessed and input.KeyCode == settings.toggleKey and settings.keybindEnabled then
+		main.Enabled = not main.Enabled
+	end
+end)
+
+-- =====================
+-- SAVE POSITION ON DRAG
+-- =====================
+frame:GetPropertyChangedSignal("Position"):Connect(function()
+	if not resizing and not collapsed then
+		settings.savedPosition = frame.Position
+		if writefile then
+			task.wait(0.5)
+			saveSettings()
+		end
+	end
+end)
+
+-- =====================
+-- RGB ANIMATION & THEME
 -- =====================
 local hue = 0
 RunService.RenderStepped:Connect(function()
-	hue = (hue + 0.003) % 1
-	local rgb = Color3.fromHSV(hue,1,1)
-
-	frame.BorderColor3 = rgb
-	titler.BorderColor3 = rgb
-	titler.TextColor3 = rgb
-	collapseBtn.TextColor3 = rgb
-	resizeSlider.TextColor3 = rgb
-
-	for _,btn in ipairs(buttons) do
-		btn.BorderColor3 = rgb
+	local currentTheme = themes[settings.theme]
+	local themeColor
+	
+	if currentTheme.animated then
+		hue = (hue + 0.003) % 1
+		themeColor = Color3.fromHSV(hue, 1, 1)
+	else
+		themeColor = currentTheme.primary
 	end
-
-	updateButtons()
+	
+	frame.BorderColor3 = themeColor
+	titler.BorderColor3 = themeColor
+	titler.TextColor3 = themeColor
+	collapseBtn.TextColor3 = themeColor
+	resizeSlider.TextColor3 = themeColor
+	resizeSlider.BorderColor3 = themeColor
+	scrollFrame.ScrollBarImageColor3 = themeColor
+	searchBar.BorderColor3 = themeColor
+	
+	for _, btnInfo in ipairs(buttons) do
+		btnInfo.button.BorderColor3 = themeColor
+	end
+	
+	updateLayout()
 end)
+
+-- =====================
+-- INITIAL SETUP
+-- =====================
+showNotification("HMD Hub loaded!", false)
+updateLayout()
