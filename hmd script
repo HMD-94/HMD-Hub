@@ -1,18 +1,19 @@
---[[ WARNING: Use at your own risk ]]--
+--[[ HMD HUB - ULTIMATE EDITION ]]--
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local HttpService = game:GetService("HttpService")
+local Players = game:GetService("Players")
 
 -- =====================
--- REMOVE OLD GUI IF EXISTS
+-- REMOVE OLD GUI
 -- =====================
 if game.CoreGui:FindFirstChild("HMD_MAIN") then
 	game.CoreGui.HMD_MAIN:Destroy()
 end
 
 -- =====================
--- SETTINGS & DATA STORAGE
+-- SETTINGS & DATA
 -- =====================
 local settings = {
 	theme = "RGB",
@@ -20,34 +21,86 @@ local settings = {
 	savedPosition = nil,
 	savedSize = nil,
 	favorites = {},
+	pinned = {},
 	recentlyUsed = {},
-	keybindEnabled = true,
-	toggleKey = Enum.KeyCode.RightControl
+	executionHistory = {},
+	ratings = {},
+	notes = {},
+	toggleKey = Enum.KeyCode.RightControl,
+	soundEnabled = true,
+	opacity = 1,
+	safeMode = false,
+	blacklist = {},
+	compactMode = false
 }
 
+local scriptData = {}
+local buttons = {}
+local currentFilter = "all"
+
+-- =====================
+-- SAVE/LOAD FUNCTIONS
+-- =====================
 local function saveSettings()
-	writefile("HMD_Settings.json", HttpService:JSONEncode(settings))
+	if writefile then
+		pcall(function()
+			writefile("HMD_Settings.json", HttpService:JSONEncode(settings))
+		end)
+	end
 end
 
 local function loadSettings()
-	if isfile and isfile("HMD_Settings.json") then
+	if readfile and isfile and isfile("HMD_Settings.json") then
 		local success, data = pcall(function()
 			return HttpService:JSONDecode(readfile("HMD_Settings.json"))
 		end)
-		if success then
-			for k,v in pairs(data) do
+		if success and data then
+			for k, v in pairs(data) do
 				settings[k] = v
 			end
 		end
 	end
 end
 
-if readfile and writefile and isfile then
-	loadSettings()
+local function saveScriptData()
+	if writefile then
+		pcall(function()
+			writefile("HMD_Scripts.json", HttpService:JSONEncode(scriptData))
+		end)
+	end
 end
 
+local function loadScriptData()
+	if readfile and isfile and isfile("HMD_Scripts.json") then
+		local success, data = pcall(function()
+			return HttpService:JSONDecode(readfile("HMD_Scripts.json"))
+		end)
+		if success and data then
+			scriptData = data
+			return
+		end
+	end
+	
+	-- Default scripts
+	scriptData = {
+		{name = "Emote GUI", url = "https://raw.githubusercontent.com/Gazer-Ha/Free-emote/refs/heads/main/Delta%20mad%20stuffs", category = "Animation"},
+		{name = "Steal Brainrot", url = "https://raw.githubusercontent.com/tienkhanh1/spicy/main/Chilli.lua", category = "Tools"},
+		{name = "Blox Fruit", url = "https://rawscripts.net/raw/Universal-Script-Blox-Fruit-Control-Update-78066", category = "Games"},
+		{name = "Auto Block", url = "https://raw.githubusercontent.com/sabscripts063-cloud/Kdml-Not-Me/main/BlockPlayer", category = "Tools"},
+		{name = "Fly GUI", url = "https://pastebin.com/raw/y7GnniTi", category = "Tools"},
+		{name = "Admin Cmd", url = "https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source", category = "Tools"},
+		{name = "Brookhaven", url = "https://raw.githubusercontent.com/as6cd0/SP_Hub/refs/heads/main/Brookhaven", category = "Games"},
+		{name = "Walkspeed", url = "https://raw.githubusercontent.com/MrScripterrFr/Speed-Changer/main/Speed%20Changer", category = "Tools"},
+		{name = "PVP Hub", url = "https://raw.githubusercontent.com/xspeedHub0/Zlhub/main/ZLPVPreview.lua", category = "Games"},
+		{name = "Walk Animation", url = "https://raw.githubusercontent.com/RubyBoo4life/Scripts/main/animations.vis", category = "Animation"},
+	}
+end
+
+loadSettings()
+loadScriptData()
+
 -- =====================
--- THEME SYSTEM
+-- THEMES
 -- =====================
 local themes = {
 	RGB = {primary = Color3.new(1,1,1), animated = true},
@@ -55,11 +108,32 @@ local themes = {
 	Red = {primary = Color3.fromRGB(255,50,50), animated = false},
 	Green = {primary = Color3.fromRGB(50,255,100), animated = false},
 	Purple = {primary = Color3.fromRGB(200,50,255), animated = false},
-	Ocean = {primary = Color3.fromRGB(50,150,255), animated = false},
+	Ocean = {primary = Color3.fromRGB(50,150,255), animated = false}
 }
 
 -- =====================
--- GUI SETUP
+-- SOUND SYSTEM
+-- =====================
+local sounds = {
+	click = "rbxassetid://6895079853",
+	success = "rbxassetid://6895103163",
+	error = "rbxassetid://1464610652"
+}
+
+local function playSound(soundType)
+	if not settings.soundEnabled then return end
+	pcall(function()
+		local sound = Instance.new("Sound")
+		sound.SoundId = sounds[soundType] or sounds.click
+		sound.Volume = 0.3
+		sound.Parent = game.SoundService
+		sound:Play()
+		game:GetService("Debris"):AddItem(sound, 2)
+	end)
+end
+
+-- =====================
+-- MAIN GUI
 -- =====================
 local main = Instance.new("ScreenGui")
 main.Name = "HMD_MAIN"
@@ -70,42 +144,112 @@ local frame = Instance.new("Frame")
 frame.Parent = main
 frame.BackgroundColor3 = Color3.fromRGB(10,10,10)
 frame.BorderSizePixel = 3
-frame.Position = settings.savedPosition or UDim2.new(0, 10, 0.3, 0)
-frame.Size = settings.savedSize or UDim2.new(0, 350, 0, 500)
+frame.Position = settings.savedPosition or UDim2.new(0, 10, 0.25, 0)
+frame.Size = settings.savedSize or UDim2.new(0, 400, 0, 500)
 frame.Active = true
 frame.Draggable = true
 frame.ClipsDescendants = true
 
+-- Title bar
 local titler = Instance.new("TextLabel")
 titler.Parent = frame
 titler.Size = UDim2.new(1, 0, 0, 40)
 titler.BackgroundColor3 = Color3.fromRGB(10,10,10)
 titler.BorderSizePixel = 3
-titler.Text = "HMD HUB"
+titler.Text = "HMD HUB ULTIMATE"
 titler.Font = Enum.Font.SourceSansBold
-titler.TextSize = 26
+titler.TextSize = 24
 titler.TextColor3 = Color3.new(1,1,1)
 titler.ZIndex = 2
 
+-- Performance label
+local perfLabel = Instance.new("TextLabel")
+perfLabel.Parent = titler
+perfLabel.Size = UDim2.new(0, 120, 0, 15)
+perfLabel.Position = UDim2.new(0, 5, 1, -18)
+perfLabel.BackgroundTransparency = 1
+perfLabel.Text = "FPS: 60 | Ping: 0"
+perfLabel.Font = Enum.Font.SourceSans
+perfLabel.TextSize = 10
+perfLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
+perfLabel.TextXAlignment = Enum.TextXAlignment.Left
+perfLabel.ZIndex = 3
+
+task.spawn(function()
+	local frames = 0
+	RunService.RenderStepped:Connect(function() frames = frames + 1 end)
+	while true do
+		task.wait(1)
+		local fps = frames
+		frames = 0
+		local ping = math.floor(game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValue())
+		perfLabel.Text = string.format("FPS: %d | Ping: %dms", fps, ping)
+	end
+end)
+
 -- =====================
--- TOP BUTTON BAR
+-- NOTIFICATION SYSTEM
 -- =====================
-local buttonBar = Instance.new("Frame")
+local notifFrame = Instance.new("Frame")
+notifFrame.Parent = main
+notifFrame.Position = UDim2.new(1, -230, 0, 10)
+notifFrame.Size = UDim2.new(0, 220, 0, 0)
+notifFrame.BackgroundTransparency = 1
+notifFrame.ZIndex = 100
+
+local function showNotification(message, isError)
+	local notif = Instance.new("Frame")
+	notif.Parent = notifFrame
+	notif.Size = UDim2.new(1, 0, 0, 50)
+	notif.BackgroundColor3 = isError and Color3.fromRGB(200,50,50) or Color3.fromRGB(50,200,100)
+	notif.BorderSizePixel = 2
+	notif.Position = UDim2.new(0, 0, 0, 0)
+	notif.ZIndex = 101
+	
+	local label = Instance.new("TextLabel")
+	label.Parent = notif
+	label.Size = UDim2.new(1, -10, 1, 0)
+	label.Position = UDim2.new(0, 5, 0, 0)
+	label.BackgroundTransparency = 1
+	label.Text = message
+	label.Font = Enum.Font.SourceSans
+	label.TextSize = 13
+	label.TextColor3 = Color3.new(1,1,1)
+	label.TextWrapped = true
+	label.ZIndex = 102
+	
+	playSound(isError and "error" or "success")
+	
+	task.delay(3, function()
+		TweenService:Create(notif, TweenInfo.new(0.3), {BackgroundTransparency = 1}):Play()
+		TweenService:Create(label, TweenInfo.new(0.3), {TextTransparency = 1}):Play()
+		task.wait(0.3)
+		notif:Destroy()
+	end)
+end
+
+-- =====================
+-- BUTTON BAR
+-- =====================
+local buttonBar = Instance.new("ScrollingFrame")
 buttonBar.Parent = frame
 buttonBar.Position = UDim2.new(0, 0, 0, 40)
 buttonBar.Size = UDim2.new(1, 0, 0, 35)
 buttonBar.BackgroundColor3 = Color3.fromRGB(15,15,15)
 buttonBar.BorderSizePixel = 0
+buttonBar.ScrollBarThickness = 4
+buttonBar.CanvasSize = UDim2.new(0, 600, 0, 35)
+buttonBar.ScrollingDirection = Enum.ScrollingDirection.X
 buttonBar.ZIndex = 2
 
-local function createTopButton(text, position, width)
+local function createTopBtn(text, pos, width)
 	local btn = Instance.new("TextButton")
 	btn.Parent = buttonBar
 	btn.Size = UDim2.new(0, width, 0, 28)
-	btn.Position = UDim2.new(0, position, 0, 3)
+	btn.Position = UDim2.new(0, pos, 0, 3)
 	btn.Text = text
 	btn.Font = Enum.Font.SourceSans
-	btn.TextSize = 14
+	btn.TextSize = 13
 	btn.BackgroundColor3 = Color3.fromRGB(25,25,25)
 	btn.BorderSizePixel = 2
 	btn.TextColor3 = Color3.new(1,1,1)
@@ -113,11 +257,16 @@ local function createTopButton(text, position, width)
 	return btn
 end
 
-local allBtn = createTopButton("All", 5, 45)
-local favBtn = createTopButton("★", 55, 35)
-local recentBtn = createTopButton("Recent", 95, 55)
-local settingsBtn = createTopButton("⚙", 155, 35)
-local viewToggle = createTopButton("Grid", 195, 50)
+local x = 5
+local allBtn = createTopBtn("All", x, 45); x = x + 50
+local favBtn = createTopBtn("★", x, 35); x = x + 40
+local recentBtn = createTopBtn("Recent", x, 55); x = x + 60
+local addBtn = createTopBtn("+ Add", x, 60); x = x + 65
+local statsBtn = createTopBtn("Stats", x, 55); x = x + 60
+local importBtn = createTopBtn("Import", x, 60); x = x + 65
+local exportBtn = createTopBtn("Export", x, 60); x = x + 65
+local settingsBtn = createTopBtn("⚙", x, 35); x = x + 40
+local viewBtn = createTopBtn("Grid", x, 50)
 
 -- =====================
 -- SEARCH BAR
@@ -131,14 +280,14 @@ searchBar.BorderSizePixel = 2
 searchBar.Text = ""
 searchBar.PlaceholderText = "Search scripts..."
 searchBar.Font = Enum.Font.SourceSans
-searchBar.TextSize = 16
+searchBar.TextSize = 15
 searchBar.TextColor3 = Color3.new(1,1,1)
 searchBar.PlaceholderColor3 = Color3.fromRGB(150,150,150)
 searchBar.ClearTextOnFocus = false
 searchBar.ZIndex = 2
 
 -- =====================
--- SCROLLING FRAME
+-- SCROLL FRAME
 -- =====================
 local scrollFrame = Instance.new("ScrollingFrame")
 scrollFrame.Parent = frame
@@ -149,69 +298,38 @@ scrollFrame.BorderSizePixel = 0
 scrollFrame.ScrollBarThickness = 8
 scrollFrame.ScrollBarImageColor3 = Color3.fromRGB(255,255,255)
 scrollFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
-scrollFrame.ClipsDescendants = true
 scrollFrame.Active = true
+scrollFrame.ZIndex = 2
 
 -- =====================
--- SETTINGS PANEL
+-- PANELS
 -- =====================
-local settingsPanel = Instance.new("Frame")
-settingsPanel.Parent = frame
-settingsPanel.Position = UDim2.new(0, 0, 0, 115)
-settingsPanel.Size = UDim2.new(1, 0, 1, -115)
-settingsPanel.BackgroundColor3 = Color3.fromRGB(15,15,15)
-settingsPanel.BorderSizePixel = 0
-settingsPanel.Visible = false
-settingsPanel.ZIndex = 5
-
-local settingsScroll = Instance.new("ScrollingFrame")
-settingsScroll.Parent = settingsPanel
-settingsScroll.Size = UDim2.new(1, 0, 1, 0)
-settingsScroll.BackgroundTransparency = 1
-settingsScroll.BorderSizePixel = 0
-settingsScroll.ScrollBarThickness = 8
-settingsScroll.CanvasSize = UDim2.new(0, 0, 0, 400)
-settingsScroll.ZIndex = 5
-
--- =====================
--- NOTIFICATION SYSTEM
--- =====================
-local notificationFrame = Instance.new("Frame")
-notificationFrame.Parent = main
-notificationFrame.Position = UDim2.new(1, -220, 0, 10)
-notificationFrame.Size = UDim2.new(0, 210, 0, 0)
-notificationFrame.BackgroundTransparency = 1
-notificationFrame.ZIndex = 100
-
-local function showNotification(message, isError)
-	local notif = Instance.new("Frame")
-	notif.Parent = notificationFrame
-	notif.Size = UDim2.new(1, 0, 0, 50)
-	notif.BackgroundColor3 = isError and Color3.fromRGB(200,50,50) or Color3.fromRGB(50,200,100)
-	notif.BorderSizePixel = 2
-	notif.BorderColor3 = Color3.new(1,1,1)
-	notif.Position = UDim2.new(0, 0, 0, #notificationFrame:GetChildren() * 55)
-	notif.ZIndex = 101
+local function createPanel()
+	local panel = Instance.new("Frame")
+	panel.Parent = frame
+	panel.Position = UDim2.new(0, 0, 0, 115)
+	panel.Size = UDim2.new(1, 0, 1, -115)
+	panel.BackgroundColor3 = Color3.fromRGB(15,15,15)
+	panel.BorderSizePixel = 0
+	panel.Visible = false
+	panel.ZIndex = 5
 	
-	local label = Instance.new("TextLabel")
-	label.Parent = notif
-	label.Size = UDim2.new(1, -10, 1, 0)
-	label.Position = UDim2.new(0, 5, 0, 0)
-	label.BackgroundTransparency = 1
-	label.Text = message
-	label.Font = Enum.Font.SourceSans
-	label.TextSize = 14
-	label.TextColor3 = Color3.new(1,1,1)
-	label.TextWrapped = true
-	label.ZIndex = 102
+	local scroll = Instance.new("ScrollingFrame")
+	scroll.Parent = panel
+	scroll.Size = UDim2.new(1, 0, 1, 0)
+	scroll.BackgroundTransparency = 1
+	scroll.ScrollBarThickness = 8
+	scroll.CanvasSize = UDim2.new(0, 0, 0, 600)
+	scroll.ZIndex = 5
 	
-	task.delay(3, function()
-		TweenService:Create(notif, TweenInfo.new(0.3), {BackgroundTransparency = 1}):Play()
-		TweenService:Create(label, TweenInfo.new(0.3), {TextTransparency = 1}):Play()
-		task.wait(0.3)
-		notif:Destroy()
-	end)
+	return panel, scroll
 end
+
+local addPanel, addScroll = createPanel()
+local statsPanel, statsScroll = createPanel()
+local importPanel, importScroll = createPanel()
+local exportPanel, exportScroll = createPanel()
+local settingsPanel, settingsScroll = createPanel()
 
 -- =====================
 -- COLLAPSE BUTTON
@@ -228,128 +346,114 @@ collapseBtn.TextColor3 = Color3.new(1,1,1)
 collapseBtn.ZIndex = 10
 
 local collapsed = false
-local miniSize = UDim2.new(0, 350, 0, 40)
+local miniSize = UDim2.new(0, 400, 0, 40)
 local lastSize = frame.Size
-
--- =====================
--- RESIZE BUTTON
--- =====================
-local resizeSlider = Instance.new("TextButton")
-resizeSlider.Parent = frame
-resizeSlider.Size = UDim2.new(0, 32, 0, 32)
-resizeSlider.Position = UDim2.new(1, -36, 1, -36)
-resizeSlider.Text = "↕"
-resizeSlider.Font = Enum.Font.SourceSansBold
-resizeSlider.TextSize = 20
-resizeSlider.BackgroundColor3 = Color3.fromRGB(15,15,15)
-resizeSlider.BorderSizePixel = 2
-resizeSlider.TextColor3 = Color3.new(1,1,1)
-resizeSlider.ZIndex = 10
 
 collapseBtn.MouseButton1Click:Connect(function()
 	collapsed = not collapsed
+	playSound("click")
+	
 	if collapsed then
 		collapseBtn.Text = "+"
 		lastSize = frame.Size
-		scrollFrame.Visible = false
+		
+		-- Hide all elements except title
 		buttonBar.Visible = false
 		searchBar.Visible = false
+		scrollFrame.Visible = false
+		addPanel.Visible = false
+		statsPanel.Visible = false
+		importPanel.Visible = false
+		exportPanel.Visible = false
 		settingsPanel.Visible = false
-		resizeSlider.Visible = false
+		
+		-- Animate to mini size
 		TweenService:Create(frame, TweenInfo.new(0.25), {Size = miniSize}):Play()
 	else
 		collapseBtn.Text = "—"
-		scrollFrame.Visible = not settingsPanel.Visible
+		
+		-- Show main elements
 		buttonBar.Visible = true
 		searchBar.Visible = true
-		resizeSlider.Visible = true
+		scrollFrame.Visible = true
+		
+		-- Restore size
 		frame.Size = lastSize
 	end
 end)
 
 -- =====================
--- RESIZE LOGIC
+-- RESIZE BUTTON
 -- =====================
-local resizing = false
-local resizeConnection = nil
-local resizeEndConnection = nil
+local resizeBtn = Instance.new("TextButton")
+resizeBtn.Parent = frame
+resizeBtn.Size = UDim2.new(0, 32, 0, 32)
+resizeBtn.Position = UDim2.new(1, -36, 1, -36)
+resizeBtn.Text = "↕"
+resizeBtn.Font = Enum.Font.SourceSansBold
+resizeBtn.TextSize = 20
+resizeBtn.BackgroundColor3 = Color3.fromRGB(15,15,15)
+resizeBtn.BorderSizePixel = 2
+resizeBtn.TextColor3 = Color3.new(1,1,1)
+resizeBtn.ZIndex = 10
 
-local function setupResize(inputObject)
+local resizing = false
+
+local function setupResize(input)
 	if collapsed then
 		collapsed = false
 		collapseBtn.Text = "—"
-		scrollFrame.Visible = not settingsPanel.Visible
 		buttonBar.Visible = true
 		searchBar.Visible = true
-		resizeSlider.Visible = true
+		scrollFrame.Visible = true
 		frame.Size = lastSize
 	end
 	
 	resizing = true
 	frame.Draggable = false
-	
 	local startSize = frame.Size
-	local startPos = inputObject.Position
+	local startPos = input.Position
 	
-	if resizeConnection then resizeConnection:Disconnect() end
-	if resizeEndConnection then resizeEndConnection:Disconnect() end
-	
-	resizeConnection = UserInputService.InputChanged:Connect(function(input)
-		if resizing and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-			local delta = input.Position - startPos
-			local newX = math.clamp(startSize.X.Offset + delta.X, 300, 900)
-			local newY = math.clamp(startSize.Y.Offset + delta.Y, 250, 700)
+	local moveConn = UserInputService.InputChanged:Connect(function(inp)
+		if resizing and (inp.UserInputType == Enum.UserInputType.MouseMovement or inp.UserInputType == Enum.UserInputType.Touch) then
+			local delta = inp.Position - startPos
+			local newX = math.clamp(startSize.X.Offset + delta.X, 350, 900)
+			local newY = math.clamp(startSize.Y.Offset + delta.Y, 300, 700)
 			frame.Size = UDim2.new(0, newX, 0, newY)
 		end
 	end)
 	
-	resizeEndConnection = UserInputService.InputEnded:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+	local endConn
+	endConn = UserInputService.InputEnded:Connect(function(inp)
+		if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
 			resizing = false
 			frame.Draggable = true
 			settings.savedSize = frame.Size
-			if writefile then saveSettings() end
-			if resizeConnection then
-				resizeConnection:Disconnect()
-				resizeConnection = nil
-			end
-			if resizeEndConnection then
-				resizeEndConnection:Disconnect()
-				resizeEndConnection = nil
-			end
+			saveSettings()
+			moveConn:Disconnect()
+			endConn:Disconnect()
 		end
 	end)
 end
 
-resizeSlider.InputBegan:Connect(function(input)
+resizeBtn.InputBegan:Connect(function(input)
 	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
 		setupResize(input)
 	end
 end)
 
 -- =====================
--- BUTTONS + SCRIPTS DATA
+-- SCRIPT BUTTONS
 -- =====================
-local buttonData = {
-	{name = "Emote GUI", url = "https://raw.githubusercontent.com/Gazer-Ha/Free-emote/refs/heads/main/Delta%20mad%20stuffs", category = "Animation", description = "Free emote animations"},
-	{name = "Steal Brainrot", url = "https://raw.githubusercontent.com/tienkhanh1/spicy/main/Chilli.lua", category = "Tools", description = "Brainrot stealer tool"},
-	{name = "Blox Fruit", url = "https://rawscripts.net/raw/Universal-Script-Blox-Fruit-Control-Update-78066", category = "Games", description = "Blox Fruit control script"},
-	{name = "Auto Block", url = "https://raw.githubusercontent.com/sabscripts063-cloud/Kdml-Not-Me/main/BlockPlayer", category = "Tools", description = "Auto block players"},
-	{name = "Fly GUI", url = "https://pastebin.com/raw/y7GnniTi", category = "Tools", description = "Simple fly GUI"},
-	{name = "Admin Cmd", url = "https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source", category = "Tools", description = "Infinite Yield admin commands"},
-	{name = "Brookhaven", url = "https://raw.githubusercontent.com/as6cd0/SP_Hub/refs/heads/main/Brookhaven", category = "Games", description = "Brookhaven RP script"},
-	{name = "Walkspeed Changer", url = "https://raw.githubusercontent.com/MrScripterrFr/Speed-Changer/main/Speed%20Changer", category = "Tools", description = "Change walkspeed"},
-	{name = "PVP Hub", url = "https://raw.githubusercontent.com/xspeedHub0/Zlhub/main/ZLPVPreview.lua", category = "Games", description = "PVP Hub for brainrot"},
-	{name = "Walk Animation", url = "https://raw.githubusercontent.com/RubyBoo4life/Scripts/main/animations.vis", category = "Animation", description = "Custom walk animations"},
-}
+local function addToHistory(name)
+	if not settings.executionHistory[name] then
+		settings.executionHistory[name] = {}
+	end
+	table.insert(settings.executionHistory[name], os.time())
+	saveSettings()
+end
 
-local buttons = {}
-local currentFilter = "all"
-
--- =====================
--- BUTTON CREATION
--- =====================
-local function createButton(data)
+local function createScriptBtn(data)
 	local btn = Instance.new("TextButton")
 	btn.Text = data.name
 	btn.BackgroundColor3 = Color3.fromRGB(15,15,15)
@@ -357,78 +461,107 @@ local function createButton(data)
 	btn.Font = Enum.Font.SourceSans
 	btn.TextWrapped = true
 	btn.TextColor3 = Color3.new(1,1,1)
-	btn.ClipsDescendants = true
+	btn.ZIndex = 3
 	
-	local isFavorite = table.find(settings.favorites, data.name) ~= nil
+	local isFav = table.find(settings.favorites, data.name) ~= nil
+	local isPin = table.find(settings.pinned, data.name) ~= nil
 	
-	-- Star icon for favorites
+	-- Pin icon
+	local pin = Instance.new("TextLabel")
+	pin.Parent = btn
+	pin.Size = UDim2.new(0, 18, 0, 18)
+	pin.Position = UDim2.new(0, 2, 0, 2)
+	pin.BackgroundTransparency = 1
+	pin.Text = isPin and "📌" or ""
+	pin.TextSize = 12
+	pin.ZIndex = 5
+	
+	-- Star icon
 	local star = Instance.new("TextLabel")
 	star.Parent = btn
 	star.Size = UDim2.new(0, 20, 0, 20)
 	star.Position = UDim2.new(1, -22, 0, 2)
 	star.BackgroundTransparency = 1
-	star.Text = isFavorite and "★" or "☆"
-	star.TextSize = 18
+	star.Text = isFav and "★" or "☆"
+	star.TextSize = 16
 	star.TextColor3 = Color3.fromRGB(255, 215, 0)
 	star.ZIndex = 5
 	
-	-- Tooltip
-	local tooltip = Instance.new("TextLabel")
-	tooltip.Parent = btn
-	tooltip.Size = UDim2.new(1, 0, 0, 0)
-	tooltip.Position = UDim2.new(0, 0, 1, 0)
-	tooltip.BackgroundColor3 = Color3.fromRGB(5,5,5)
-	tooltip.BorderSizePixel = 1
-	tooltip.Text = data.description or "No description"
-	tooltip.TextSize = 12
-	tooltip.Font = Enum.Font.SourceSans
-	tooltip.TextColor3 = Color3.new(1,1,1)
-	tooltip.TextWrapped = true
-	tooltip.Visible = false
-	tooltip.ZIndex = 100
+	-- Rating
+	local rating = settings.ratings[data.name] or 0
+	local ratingLbl = Instance.new("TextLabel")
+	ratingLbl.Parent = btn
+	ratingLbl.Size = UDim2.new(0, 50, 0, 12)
+	ratingLbl.Position = UDim2.new(0, 3, 1, -14)
+	ratingLbl.BackgroundTransparency = 1
+	ratingLbl.Text = string.rep("⭐", rating)
+	ratingLbl.TextSize = 9
+	ratingLbl.TextXAlignment = Enum.TextXAlignment.Left
+	ratingLbl.ZIndex = 5
 	
-	btn.MouseEnter:Connect(function()
-		tooltip.Size = UDim2.new(1, 0, 0, 30)
-		tooltip.Visible = true
-	end)
+	-- Execution count
+	local execCount = settings.executionHistory[data.name] and #settings.executionHistory[data.name] or 0
+	local countLbl = Instance.new("TextLabel")
+	countLbl.Parent = btn
+	countLbl.Size = UDim2.new(0, 35, 0, 12)
+	countLbl.Position = UDim2.new(1, -38, 1, -14)
+	countLbl.BackgroundTransparency = 1
+	countLbl.Text = "×" .. execCount
+	countLbl.TextSize = 10
+	countLbl.TextColor3 = Color3.fromRGB(150, 150, 150)
+	countLbl.TextXAlignment = Enum.TextXAlignment.Right
+	countLbl.ZIndex = 5
 	
-	btn.MouseLeave:Connect(function()
-		tooltip.Visible = false
-	end)
-	
-	-- Click to run script
+	-- Click to execute
 	btn.MouseButton1Click:Connect(function()
+		if table.find(settings.blacklist, data.name) then
+			showNotification("Script is blacklisted!", true)
+			return
+		end
+		
+		if settings.safeMode then
+			showNotification("Safe mode - blocked", true)
+			return
+		end
+		
+		playSound("click")
+		
 		local success, err = pcall(function()
 			loadstring(game:HttpGet(data.url))()
 		end)
 		
 		if success then
 			showNotification("✓ " .. data.name .. " loaded!", false)
-			-- Add to recently used
+			
 			table.insert(settings.recentlyUsed, 1, data.name)
 			if #settings.recentlyUsed > 10 then
 				table.remove(settings.recentlyUsed, 11)
 			end
-			if writefile then saveSettings() end
+			
+			addToHistory(data.name)
+			saveSettings()
 		else
-			showNotification("✗ Failed to load " .. data.name, true)
+			showNotification("✗ Failed: " .. data.name, true)
 		end
 	end)
 	
-	-- Right click or long press to favorite (mobile support)
-	local holdTime = 0
+	-- Long press for mobile / right-click for PC
 	local holding = false
+	local holdTime = 0
 	
 	btn.InputBegan:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseButton2 or input.UserInputType == Enum.UserInputType.Touch then
+		if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton2 then
 			holding = true
 			holdTime = 0
+			
 			task.spawn(function()
 				while holding do
 					task.wait(0.1)
 					holdTime = holdTime + 0.1
-					if holdTime >= 0.5 and input.UserInputType == Enum.UserInputType.Touch then
+					
+					if holdTime >= 0.5 then
 						holding = false
+						
 						-- Toggle favorite
 						local idx = table.find(settings.favorites, data.name)
 						if idx then
@@ -440,7 +573,7 @@ local function createButton(data)
 							star.Text = "★"
 							showNotification("Added to favorites", false)
 						end
-						if writefile then saveSettings() end
+						saveSettings()
 						break
 					end
 				end
@@ -449,140 +582,449 @@ local function createButton(data)
 	end)
 	
 	btn.InputEnded:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseButton2 then
-			-- Toggle favorite
-			local idx = table.find(settings.favorites, data.name)
-			if idx then
-				table.remove(settings.favorites, idx)
-				star.Text = "☆"
-				showNotification("Removed from favorites", false)
-			else
-				table.insert(settings.favorites, data.name)
-				star.Text = "★"
-				showNotification("Added to favorites", false)
-			end
-			if writefile then saveSettings() end
-		end
 		holding = false
 	end)
 	
 	return btn, data
 end
 
-for _, data in ipairs(buttonData) do
-	local btn, btnData = createButton(data)
+-- Create all buttons
+for i, data in ipairs(scriptData) do
+	local btn = createScriptBtn(data)
 	btn.Parent = scrollFrame
-	table.insert(buttons, {button = btn, data = btnData})
+	table.insert(buttons, {button = btn, data = data})
 end
 
 -- =====================
--- SETTINGS PANEL CONTENT
+-- ADD SCRIPT PANEL
 -- =====================
-local yOffset = 10
-
-local function createSettingLabel(text, y)
-	local label = Instance.new("TextLabel")
-	label.Parent = settingsScroll
-	label.Size = UDim2.new(1, -20, 0, 25)
-	label.Position = UDim2.new(0, 10, 0, y)
-	label.BackgroundTransparency = 1
-	label.Text = text
-	label.Font = Enum.Font.SourceSansBold
-	label.TextSize = 16
-	label.TextColor3 = Color3.new(1,1,1)
-	label.TextXAlignment = Enum.TextXAlignment.Left
-	label.ZIndex = 6
-	return label
+local function createInput(parent, label, y, placeholder)
+	local lbl = Instance.new("TextLabel")
+	lbl.Parent = parent
+	lbl.Size = UDim2.new(1, -20, 0, 20)
+	lbl.Position = UDim2.new(0, 10, 0, y)
+	lbl.BackgroundTransparency = 1
+	lbl.Text = label
+	lbl.TextColor3 = Color3.new(1, 1, 1)
+	lbl.Font = Enum.Font.SourceSansBold
+	lbl.TextSize = 14
+	lbl.TextXAlignment = Enum.TextXAlignment.Left
+	lbl.ZIndex = 6
+	
+	local input = Instance.new("TextBox")
+	input.Parent = parent
+	input.Size = UDim2.new(1, -20, 0, 28)
+	input.Position = UDim2.new(0, 10, 0, y + 22)
+	input.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+	input.BorderSizePixel = 2
+	input.Text = ""
+	input.PlaceholderText = placeholder
+	input.TextColor3 = Color3.new(1, 1, 1)
+	input.Font = Enum.Font.SourceSans
+	input.TextSize = 13
+	input.ClearTextOnFocus = false
+	input.ZIndex = 6
+	
+	return input, y + 55
 end
 
-local function createThemeButton(themeName, y)
+local addTitle = Instance.new("TextLabel")
+addTitle.Parent = addScroll
+addTitle.Size = UDim2.new(1, 0, 0, 30)
+addTitle.BackgroundTransparency = 1
+addTitle.Text = "=== ADD SCRIPT ==="
+addTitle.TextColor3 = Color3.new(1, 1, 1)
+addTitle.Font = Enum.Font.SourceSansBold
+addTitle.TextSize = 18
+addTitle.ZIndex = 6
+
+local y = 35
+local nameInput, y = createInput(addScroll, "Name:", y, "Script name...")
+local urlInput, y = createInput(addScroll, "URL:", y, "https://...")
+local catInput, y = createInput(addScroll, "Category:", y, "Tools/Games/etc")
+
+local addBtnSubmit = Instance.new("TextButton")
+addBtnSubmit.Parent = addScroll
+addBtnSubmit.Size = UDim2.new(0, 140, 0, 35)
+addBtnSubmit.Position = UDim2.new(0.5, -70, 0, y + 10)
+addBtnSubmit.Text = "ADD SCRIPT"
+addBtnSubmit.BackgroundColor3 = Color3.fromRGB(50, 150, 50)
+addBtnSubmit.BorderSizePixel = 2
+addBtnSubmit.TextColor3 = Color3.new(1, 1, 1)
+addBtnSubmit.Font = Enum.Font.SourceSansBold
+addBtnSubmit.TextSize = 14
+addBtnSubmit.ZIndex = 6
+
+addBtnSubmit.MouseButton1Click:Connect(function()
+	if nameInput.Text == "" or urlInput.Text == "" then
+		showNotification("Name and URL required!", true)
+		return
+	end
+	
+	local newScript = {
+		name = nameInput.Text,
+		url = urlInput.Text,
+		category = catInput.Text ~= "" and catInput.Text or "General"
+	}
+	
+	table.insert(scriptData, newScript)
+	saveScriptData()
+	
+	local btn = createScriptBtn(newScript)
+	btn.Parent = scrollFrame
+	table.insert(buttons, {button = btn, data = newScript})
+	
+	showNotification("✓ Script added!", false)
+	playSound("success")
+	
+	nameInput.Text = ""
+	urlInput.Text = ""
+	catInput.Text = ""
+	
+	addPanel.Visible = false
+	scrollFrame.Visible = true
+end)
+
+-- =====================
+-- STATS PANEL
+-- =====================
+local statsTitle = Instance.new("TextLabel")
+statsTitle.Parent = statsScroll
+statsTitle.Size = UDim2.new(1, 0, 0, 30)
+statsTitle.BackgroundTransparency = 1
+statsTitle.Text = "=== STATISTICS ==="
+statsTitle.TextColor3 = Color3.new(1, 1, 1)
+statsTitle.Font = Enum.Font.SourceSansBold
+statsTitle.TextSize = 18
+statsTitle.ZIndex = 6
+
+local statsTxt = Instance.new("TextLabel")
+statsTxt.Parent = statsScroll
+statsTxt.Size = UDim2.new(1, -20, 0, 250)
+statsTxt.Position = UDim2.new(0, 10, 0, 35)
+statsTxt.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+statsTxt.BorderSizePixel = 2
+statsTxt.Text = "Loading..."
+statsTxt.TextColor3 = Color3.new(1, 1, 1)
+statsTxt.Font = Enum.Font.Code
+statsTxt.TextSize = 12
+statsTxt.TextXAlignment = Enum.TextXAlignment.Left
+statsTxt.TextYAlignment = Enum.TextYAlignment.Top
+statsTxt.TextWrapped = true
+statsTxt.ZIndex = 6
+
+task.spawn(function()
+	while true do
+		if statsPanel.Visible then
+			local totalExec = 0
+			for _, count in pairs(settings.executionHistory) do
+				totalExec = totalExec + #count
+			end
+			
+			statsTxt.Text = string.format([[
+Scripts: %d
+Favorites: %d
+Recent: %d
+Executions: %d
+Pinned: %d
+
+Game: %s
+			]], #scriptData, #settings.favorites, #settings.recentlyUsed, totalExec, #settings.pinned,
+			game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId).Name or "Unknown")
+		end
+		task.wait(2)
+	end
+end)
+
+-- =====================
+-- IMPORT/EXPORT PANELS
+-- =====================
+local exportTitle = Instance.new("TextLabel")
+exportTitle.Parent = exportScroll
+exportTitle.Size = UDim2.new(1, 0, 0, 30)
+exportTitle.BackgroundTransparency = 1
+exportTitle.Text = "=== EXPORT ==="
+exportTitle.TextColor3 = Color3.new(1, 1, 1)
+exportTitle.Font = Enum.Font.SourceSansBold
+exportTitle.TextSize = 18
+exportTitle.ZIndex = 6
+
+local exportBox = Instance.new("TextBox")
+exportBox.Parent = exportScroll
+exportBox.Size = UDim2.new(1, -20, 0, 250)
+exportBox.Position = UDim2.new(0, 10, 0, 35)
+exportBox.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+exportBox.BorderSizePixel = 2
+exportBox.Text = ""
+exportBox.TextColor3 = Color3.new(1, 1, 1)
+exportBox.Font = Enum.Font.Code
+exportBox.TextSize = 11
+exportBox.TextXAlignment = Enum.TextXAlignment.Left
+exportBox.TextYAlignment = Enum.TextYAlignment.Top
+exportBox.TextWrapped = true
+exportBox.MultiLine = true
+exportBox.ClearTextOnFocus = false
+exportBox.ZIndex = 6
+
+local exportBtnGen = Instance.new("TextButton")
+exportBtnGen.Parent = exportScroll
+exportBtnGen.Size = UDim2.new(0, 140, 0, 32)
+exportBtnGen.Position = UDim2.new(0.5, -70, 0, 295)
+exportBtnGen.Text = "GENERATE CODE"
+exportBtnGen.BackgroundColor3 = Color3.fromRGB(50, 100, 200)
+exportBtnGen.TextColor3 = Color3.new(1, 1, 1)
+exportBtnGen.Font = Enum.Font.SourceSansBold
+exportBtnGen.TextSize = 13
+exportBtnGen.ZIndex = 6
+
+exportBtnGen.MouseButton1Click:Connect(function()
+	local exportData = {scripts = scriptData, settings = settings}
+	local encoded = HttpService:JSONEncode(exportData)
+	local compressed = HttpService:Base64Encode(encoded)
+	exportBox.Text = compressed
+	showNotification("Export code generated!", false)
+	playSound("success")
+end)
+
+local importTitle = Instance.new("TextLabel")
+importTitle.Parent = importScroll
+importTitle.Size = UDim2.new(1, 0, 0, 30)
+importTitle.BackgroundTransparency = 1
+importTitle.Text = "=== IMPORT ==="
+importTitle.TextColor3 = Color3.new(1, 1, 1)
+importTitle.Font = Enum.Font.SourceSansBold
+importTitle.TextSize = 18
+importTitle.ZIndex = 6
+
+local importBox = Instance.new("TextBox")
+importBox.Parent = importScroll
+importBox.Size = UDim2.new(1, -20, 0, 250)
+importBox.Position = UDim2.new(0, 10, 0, 35)
+importBox.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+importBox.BorderSizePixel = 2
+importBox.Text = ""
+importBox.PlaceholderText = "Paste import code here..."
+importBox.TextColor3 = Color3.new(1, 1, 1)
+importBox.Font = Enum.Font.Code
+importBox.TextSize = 11
+importBox.TextXAlignment = Enum.TextXAlignment.Left
+importBox.TextYAlignment = Enum.TextYAlignment.Top
+importBox.TextWrapped = true
+importBox.MultiLine = true
+importBox.ClearTextOnFocus = false
+importBox.ZIndex = 6
+
+local importBtnSubmit = Instance.new("TextButton")
+importBtnSubmit.Parent = importScroll
+importBtnSubmit.Size = UDim2.new(0, 140, 0, 32)
+importBtnSubmit.Position = UDim2.new(0.5, -70, 0, 295)
+importBtnSubmit.Text = "IMPORT"
+importBtnSubmit.BackgroundColor3 = Color3.fromRGB(50, 200, 100)
+importBtnSubmit.TextColor3 = Color3.new(1, 1, 1)
+importBtnSubmit.Font = Enum.Font.SourceSansBold
+importBtnSubmit.TextSize = 13
+importBtnSubmit.ZIndex = 6
+
+importBtnSubmit.MouseButton1Click:Connect(function()
+	if importBox.Text == "" then
+		showNotification("Paste code first!", true)
+		return
+	end
+	
+	local success, result = pcall(function()
+		local decoded = HttpService:Base64Decode(importBox.Text)
+		return HttpService:JSONDecode(decoded)
+	end)
+	
+	if success and result and result.scripts then
+		for _, script in ipairs(result.scripts) do
+			table.insert(scriptData, script)
+		end
+		saveScriptData()
+		
+		showNotification("✓ Imported successfully!", false)
+		playSound("success")
+		importBox.Text = ""
+		
+		for _, btnInfo in ipairs(buttons) do
+			btnInfo.button:Destroy()
+		end
+		buttons = {}
+		
+		for i, data in ipairs(scriptData) do
+			local btn = createScriptBtn(data)
+			btn.Parent = scrollFrame
+			table.insert(buttons, {button = btn, data = data})
+		end
+	else
+		showNotification("✗ Invalid code!", true)
+	end
+end)
+
+-- =====================
+-- SETTINGS PANEL
+-- =====================
+local setTitle = Instance.new("TextLabel")
+setTitle.Parent = settingsScroll
+setTitle.Size = UDim2.new(1, 0, 0, 30)
+setTitle.BackgroundTransparency = 1
+setTitle.Text = "=== SETTINGS ==="
+setTitle.TextColor3 = Color3.new(1, 1, 1)
+setTitle.Font = Enum.Font.SourceSansBold
+setTitle.TextSize = 18
+setTitle.ZIndex = 6
+
+local sY = 35
+
+local function createToggle(label, key, yPos)
+	local lbl = Instance.new("TextLabel")
+	lbl.Parent = settingsScroll
+	lbl.Size = UDim2.new(0.65, 0, 0, 28)
+	lbl.Position = UDim2.new(0, 10, 0, yPos)
+	lbl.BackgroundTransparency = 1
+	lbl.Text = label
+	lbl.TextColor3 = Color3.new(1, 1, 1)
+	lbl.Font = Enum.Font.SourceSans
+	lbl.TextSize = 13
+	lbl.TextXAlignment = Enum.TextXAlignment.Left
+	lbl.ZIndex = 6
+	
+	local toggle = Instance.new("TextButton")
+	toggle.Parent = settingsScroll
+	toggle.Size = UDim2.new(0, 55, 0, 24)
+	toggle.Position = UDim2.new(0.7, 0, 0, yPos + 2)
+	toggle.Text = settings[key] and "ON" or "OFF"
+	toggle.BackgroundColor3 = settings[key] and Color3.fromRGB(50, 200, 50) or Color3.fromRGB(150, 50, 50)
+	toggle.TextColor3 = Color3.new(1, 1, 1)
+	toggle.Font = Enum.Font.SourceSansBold
+	toggle.TextSize = 12
+	toggle.ZIndex = 6
+	
+	toggle.MouseButton1Click:Connect(function()
+		settings[key] = not settings[key]
+		toggle.Text = settings[key] and "ON" or "OFF"
+		toggle.BackgroundColor3 = settings[key] and Color3.fromRGB(50, 200, 50) or Color3.fromRGB(150, 50, 50)
+		saveSettings()
+		playSound("click")
+	end)
+	
+	return yPos + 32
+end
+
+sY = createToggle("Sound Effects", "soundEnabled", sY)
+sY = createToggle("Safe Mode", "safeMode", sY)
+sY = createToggle("Compact Mode", "compactMode", sY)
+
+sY = sY + 10
+
+-- Theme buttons
+local themeLbl = Instance.new("TextLabel")
+themeLbl.Parent = settingsScroll
+themeLbl.Size = UDim2.new(1, -20, 0, 22)
+themeLbl.Position = UDim2.new(0, 10, 0, sY)
+themeLbl.BackgroundTransparency = 1
+themeLbl.Text = "THEME:"
+themeLbl.TextColor3 = Color3.new(1, 1, 1)
+themeLbl.Font = Enum.Font.SourceSansBold
+themeLbl.TextSize = 15
+themeLbl.TextXAlignment = Enum.TextXAlignment.Left
+themeLbl.ZIndex = 6
+
+sY = sY + 26
+
+local tIdx = 0
+for themeName, _ in pairs(themes) do
 	local btn = Instance.new("TextButton")
 	btn.Parent = settingsScroll
-	btn.Size = UDim2.new(0, 80, 0, 30)
-	btn.Position = UDim2.new(0, 10 + ((y - 1) % 4) * 85, 0, 70 + math.floor((y - 1) / 4) * 35)
+	btn.Size = UDim2.new(0, 80, 0, 28)
+	btn.Position = UDim2.new(0, 10 + (tIdx % 4) * 85, 0, sY + math.floor(tIdx / 4) * 32)
 	btn.Text = themeName
-	btn.Font = Enum.Font.SourceSans
-	btn.TextSize = 14
-	btn.BackgroundColor3 = Color3.fromRGB(25,25,25)
+	btn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 	btn.BorderSizePixel = 2
-	btn.TextColor3 = Color3.new(1,1,1)
+	btn.TextColor3 = Color3.new(1, 1, 1)
+	btn.Font = Enum.Font.SourceSans
+	btn.TextSize = 12
 	btn.ZIndex = 6
 	
 	btn.MouseButton1Click:Connect(function()
 		settings.theme = themeName
-		if writefile then saveSettings() end
-		showNotification("Theme changed to " .. themeName, false)
+		saveSettings()
+		showNotification("Theme: " .. themeName, false)
+		playSound("click")
 	end)
 	
-	return btn
+	tIdx = tIdx + 1
 end
 
-createSettingLabel("═══ THEME SELECTION ═══", yOffset)
-yOffset = yOffset + 30
+sY = sY + math.ceil(tIdx / 4) * 32 + 20
 
-local themeIdx = 1
-for themeName, _ in pairs(themes) do
-	createThemeButton(themeName, themeIdx)
-	themeIdx = themeIdx + 1
-end
+-- Keybind section
+local keybindLbl = Instance.new("TextLabel")
+keybindLbl.Parent = settingsScroll
+keybindLbl.Size = UDim2.new(1, -20, 0, 22)
+keybindLbl.Position = UDim2.new(0, 10, 0, sY)
+keybindLbl.BackgroundTransparency = 1
+keybindLbl.Text = "KEYBIND:"
+keybindLbl.TextColor3 = Color3.new(1, 1, 1)
+keybindLbl.Font = Enum.Font.SourceSansBold
+keybindLbl.TextSize = 15
+keybindLbl.TextXAlignment = Enum.TextXAlignment.Left
+keybindLbl.ZIndex = 6
 
-yOffset = yOffset + math.ceil(themeIdx / 4) * 35 + 10
+sY = sY + 26
 
-createSettingLabel("═══ KEYBIND ═══", yOffset)
-yOffset = yOffset + 30
+local currentKeyLbl = Instance.new("TextLabel")
+currentKeyLbl.Parent = settingsScroll
+currentKeyLbl.Size = UDim2.new(1, -20, 0, 25)
+currentKeyLbl.Position = UDim2.new(0, 10, 0, sY)
+currentKeyLbl.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+currentKeyLbl.BorderSizePixel = 2
+currentKeyLbl.Text = "Current: " .. settings.toggleKey.Name
+currentKeyLbl.TextColor3 = Color3.new(1, 1, 1)
+currentKeyLbl.Font = Enum.Font.SourceSans
+currentKeyLbl.TextSize = 13
+currentKeyLbl.ZIndex = 6
 
-local keybindLabel = Instance.new("TextLabel")
-keybindLabel.Parent = settingsScroll
-keybindLabel.Size = UDim2.new(1, -20, 0, 25)
-keybindLabel.Position = UDim2.new(0, 10, 0, yOffset)
-keybindLabel.BackgroundColor3 = Color3.fromRGB(25,25,25)
-keybindLabel.BorderSizePixel = 2
-keybindLabel.Text = "Toggle Key: " .. settings.toggleKey.Name
-keybindLabel.Font = Enum.Font.SourceSans
-keybindLabel.TextSize = 14
-keybindLabel.TextColor3 = Color3.new(1,1,1)
-keybindLabel.ZIndex = 6
-
-yOffset = yOffset + 35
+sY = sY + 30
 
 local changeKeyBtn = Instance.new("TextButton")
 changeKeyBtn.Parent = settingsScroll
-changeKeyBtn.Size = UDim2.new(0, 150, 0, 30)
-changeKeyBtn.Position = UDim2.new(0, 10, 0, yOffset)
+changeKeyBtn.Size = UDim2.new(0, 140, 0, 30)
+changeKeyBtn.Position = UDim2.new(0, 10, 0, sY)
 changeKeyBtn.Text = "Change Keybind"
-changeKeyBtn.Font = Enum.Font.SourceSans
-changeKeyBtn.TextSize = 14
-changeKeyBtn.BackgroundColor3 = Color3.fromRGB(50,100,200)
+changeKeyBtn.BackgroundColor3 = Color3.fromRGB(50, 100, 200)
 changeKeyBtn.BorderSizePixel = 2
-changeKeyBtn.TextColor3 = Color3.new(1,1,1)
+changeKeyBtn.TextColor3 = Color3.new(1, 1, 1)
+changeKeyBtn.Font = Enum.Font.SourceSans
+changeKeyBtn.TextSize = 13
 changeKeyBtn.ZIndex = 6
 
 changeKeyBtn.MouseButton1Click:Connect(function()
 	changeKeyBtn.Text = "Press any key..."
 	local connection
-	connection = UserInputService.InputBegan:Connect(function(input)
+	connection = UserInputService.InputBegan:Connect(function(input, processed)
 		if input.UserInputType == Enum.UserInputType.Keyboard then
 			settings.toggleKey = input.KeyCode
-			keybindLabel.Text = "Toggle Key: " .. input.KeyCode.Name
+			currentKeyLbl.Text = "Current: " .. input.KeyCode.Name
 			changeKeyBtn.Text = "Change Keybind"
-			if writefile then saveSettings() end
+			saveSettings()
+			showNotification("Keybind set to " .. input.KeyCode.Name, false)
 			connection:Disconnect()
 		end
 	end)
 end)
 
-yOffset = yOffset + 40
+sY = sY + 40
 
 local resetBtn = Instance.new("TextButton")
 resetBtn.Parent = settingsScroll
-resetBtn.Size = UDim2.new(0, 150, 0, 30)
-resetBtn.Position = UDim2.new(0, 10, 0, yOffset)
-resetBtn.Text = "Reset All Settings"
-resetBtn.Font = Enum.Font.SourceSans
-resetBtn.TextSize = 14
-resetBtn.BackgroundColor3 = Color3.fromRGB(200,50,50)
-resetBtn.BorderSizePixel = 2
-resetBtn.TextColor3 = Color3.new(1,1,1)
+resetBtn.Size = UDim2.new(0, 160, 0, 35)
+resetBtn.Position = UDim2.new(0.5, -80, 0, sY)
+resetBtn.Text = "RESET SETTINGS"
+resetBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+resetBtn.TextColor3 = Color3.new(1, 1, 1)
+resetBtn.Font = Enum.Font.SourceSansBold
+resetBtn.TextSize = 13
 resetBtn.ZIndex = 6
 
 resetBtn.MouseButton1Click:Connect(function()
@@ -592,124 +1034,179 @@ resetBtn.MouseButton1Click:Connect(function()
 		savedPosition = nil,
 		savedSize = nil,
 		favorites = {},
+		pinned = {},
 		recentlyUsed = {},
-		keybindEnabled = true,
-		toggleKey = Enum.KeyCode.RightControl
+		executionHistory = {},
+		ratings = {},
+		notes = {},
+		toggleKey = Enum.KeyCode.RightControl,
+		soundEnabled = true,
+		opacity = 1,
+		safeMode = false,
+		blacklist = {},
+		compactMode = false
 	}
-	if writefile then saveSettings() end
+	saveSettings()
+	currentKeyLbl.Text = "Current: " .. settings.toggleKey.Name
 	showNotification("Settings reset!", false)
+	playSound("success")
 end)
 
-settingsScroll.CanvasSize = UDim2.new(0, 0, 0, yOffset + 50)
+settingsScroll.CanvasSize = UDim2.new(0, 0, 0, sY + 50)
 
 -- =====================
--- FILTER & LAYOUT SYSTEM
+-- FILTER & LAYOUT
 -- =====================
-local function filterButtons(filter, searchText)
-	local visibleButtons = {}
-	searchText = searchText and searchText:lower() or ""
+local function filterButtons(filter, search)
+	local visible = {}
+	search = search and search:lower() or ""
 	
 	for _, btnInfo in ipairs(buttons) do
-		local visible = true
+		local show = true
+		local data = btnInfo.data
 		
-		-- Filter by category
 		if filter == "favorites" then
-			visible = table.find(settings.favorites, btnInfo.data.name) ~= nil
+			show = table.find(settings.favorites, data.name) ~= nil
 		elseif filter == "recent" then
-			visible = table.find(settings.recentlyUsed, btnInfo.data.name) ~= nil
+			show = table.find(settings.recentlyUsed, data.name) ~= nil
 		end
 		
-		-- Filter by search
-		if visible and searchText ~= "" then
-			visible = btnInfo.data.name:lower():find(searchText) ~= nil
+		if show and search ~= "" then
+			show = data.name:lower():find(search) ~= nil
 		end
 		
-		if visible then
-			table.insert(visibleButtons, btnInfo)
+		btnInfo.button.Visible = show
+		if show then
+			table.insert(visible, btnInfo)
 		end
-		
-		btnInfo.button.Visible = visible
 	end
 	
-	return visibleButtons
+	-- Sort: pinned first
+	table.sort(visible, function(a, b)
+		local aPin = table.find(settings.pinned, a.data.name) ~= nil
+		local bPin = table.find(settings.pinned, b.data.name) ~= nil
+		if aPin and not bPin then return true end
+		if not aPin and bPin then return false end
+		return false
+	end)
+	
+	return visible
 end
 
 local function updateLayout()
-	local visibleButtons = filterButtons(currentFilter, searchBar.Text)
+	local visible = filterButtons(currentFilter, searchBar.Text)
 	local w = scrollFrame.AbsoluteSize.X
-	local paddingX, paddingY = 12, 10
-	local scrollbarWidth = 12
+	local pad = 12
+	local scrollW = 12
 	
 	if settings.viewMode == "grid" then
-		local cols = 2
-		local btnW = (w - scrollbarWidth - (cols + 1) * paddingX) / cols
-		local btnH = 50
-		local txtSize = math.clamp(btnH * 0.36, 14, 20)
+		local cols = settings.compactMode and 3 or 2
+		local btnW = (w - scrollW - (cols + 1) * pad) / cols
+		local btnH = settings.compactMode and 40 or 52
+		local txtSize = settings.compactMode and 12 or 15
 		
-		for i, btnInfo in ipairs(visibleButtons) do
-			local col = (i-1) % cols
-			local row = math.floor((i-1) / cols)
+		for i, btnInfo in ipairs(visible) do
+			local col = (i - 1) % cols
+			local row = math.floor((i - 1) / cols)
 			btnInfo.button.Size = UDim2.new(0, btnW, 0, btnH)
-			btnInfo.button.Position = UDim2.new(
-				0, paddingX + col * (btnW + paddingX),
-				0, paddingY + row * (btnH + paddingY)
-			)
+			btnInfo.button.Position = UDim2.new(0, pad + col * (btnW + pad), 0, pad + row * (btnH + pad))
 			btnInfo.button.TextSize = txtSize
 		end
 		
-		local totalRows = math.ceil(#visibleButtons / cols)
-		local canvasHeight = paddingY + totalRows * (btnH + paddingY) + 10
-		scrollFrame.CanvasSize = UDim2.new(0, 0, 0, canvasHeight)
+		local rows = math.ceil(#visible / cols)
+		scrollFrame.CanvasSize = UDim2.new(0, 0, 0, pad + rows * (btnH + pad))
 	else
-		-- List view
-		local btnW = w - scrollbarWidth - 20
-		local btnH = 35
-		local txtSize = 16
+		local btnW = w - scrollW - 20
+		local btnH = settings.compactMode and 32 or 38
+		local txtSize = settings.compactMode and 13 or 15
 		
-		for i, btnInfo in ipairs(visibleButtons) do
+		for i, btnInfo in ipairs(visible) do
 			btnInfo.button.Size = UDim2.new(0, btnW, 0, btnH)
-			btnInfo.button.Position = UDim2.new(0, 10, 0, (i-1) * (btnH + 5) + 5)
+			btnInfo.button.Position = UDim2.new(0, 10, 0, (i - 1) * (btnH + 5) + 5)
 			btnInfo.button.TextSize = txtSize
 		end
 		
-		local canvasHeight = #visibleButtons * (btnH + 5) + 10
-		scrollFrame.CanvasSize = UDim2.new(0, 0, 0, canvasHeight)
+		scrollFrame.CanvasSize = UDim2.new(0, 0, 0, #visible * (btnH + 5) + 10)
 	end
 end
 
 -- =====================
--- BUTTON BAR ACTIONS
+-- PANEL SWITCHING
 -- =====================
+local currentPanel = nil
+
+local function showPanel(panel)
+	if currentPanel then
+		currentPanel.Visible = false
+	end
+	
+	if panel then
+		panel.Visible = true
+		scrollFrame.Visible = false
+		currentPanel = panel
+	else
+		scrollFrame.Visible = true
+		currentPanel = nil
+	end
+end
+
 allBtn.MouseButton1Click:Connect(function()
 	currentFilter = "all"
+	showPanel(nil)
 	updateLayout()
+	playSound("click")
 end)
 
 favBtn.MouseButton1Click:Connect(function()
 	currentFilter = "favorites"
+	showPanel(nil)
 	updateLayout()
+	playSound("click")
 end)
 
 recentBtn.MouseButton1Click:Connect(function()
 	currentFilter = "recent"
+	showPanel(nil)
 	updateLayout()
+	playSound("click")
+end)
+
+addBtn.MouseButton1Click:Connect(function()
+	showPanel(addPanel)
+	playSound("click")
+end)
+
+statsBtn.MouseButton1Click:Connect(function()
+	showPanel(statsPanel)
+	playSound("click")
+end)
+
+importBtn.MouseButton1Click:Connect(function()
+	showPanel(importPanel)
+	playSound("click")
+end)
+
+exportBtn.MouseButton1Click:Connect(function()
+	showPanel(exportPanel)
+	playSound("click")
 end)
 
 settingsBtn.MouseButton1Click:Connect(function()
-	settingsPanel.Visible = not settingsPanel.Visible
-	scrollFrame.Visible = not settingsPanel.Visible
+	showPanel(settingsPanel)
+	playSound("click")
 end)
 
-viewToggle.MouseButton1Click:Connect(function()
+viewBtn.MouseButton1Click:Connect(function()
 	if settings.viewMode == "grid" then
 		settings.viewMode = "list"
-		viewToggle.Text = "List"
+		viewBtn.Text = "List"
 	else
 		settings.viewMode = "grid"
-		viewToggle.Text = "Grid"
+		viewBtn.Text = "Grid"
 	end
-	if writefile then saveSettings() end
+	saveSettings()
 	updateLayout()
+	playSound("click")
 end)
 
 searchBar:GetPropertyChangedSignal("Text"):Connect(function()
@@ -717,60 +1214,65 @@ searchBar:GetPropertyChangedSignal("Text"):Connect(function()
 end)
 
 -- =====================
--- KEYBIND TOGGLE
+-- KEYBIND
 -- =====================
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-	if not gameProcessed and input.KeyCode == settings.toggleKey and settings.keybindEnabled then
+UserInputService.InputBegan:Connect(function(input, processed)
+	if not processed and input.KeyCode == settings.toggleKey then
 		main.Enabled = not main.Enabled
+		playSound("click")
 	end
 end)
 
 -- =====================
--- SAVE POSITION ON DRAG
+-- SAVE POSITION
 -- =====================
 frame:GetPropertyChangedSignal("Position"):Connect(function()
 	if not resizing and not collapsed then
+		task.wait(0.5)
 		settings.savedPosition = frame.Position
-		if writefile then
-			task.wait(0.5)
-			saveSettings()
-		end
+		saveSettings()
 	end
 end)
 
 -- =====================
--- RGB ANIMATION & THEME
+-- THEME ENGINE
 -- =====================
 local hue = 0
 RunService.RenderStepped:Connect(function()
-	local currentTheme = themes[settings.theme]
-	local themeColor
+	local theme = themes[settings.theme]
+	local color
 	
-	if currentTheme.animated then
+	if theme.animated then
 		hue = (hue + 0.003) % 1
-		themeColor = Color3.fromHSV(hue, 1, 1)
+		color = Color3.fromHSV(hue, 1, 1)
 	else
-		themeColor = currentTheme.primary
+		color = theme.primary
 	end
 	
-	frame.BorderColor3 = themeColor
-	titler.BorderColor3 = themeColor
-	titler.TextColor3 = themeColor
-	collapseBtn.TextColor3 = themeColor
-	resizeSlider.TextColor3 = themeColor
-	resizeSlider.BorderColor3 = themeColor
-	scrollFrame.ScrollBarImageColor3 = themeColor
-	searchBar.BorderColor3 = themeColor
+	frame.BorderColor3 = color
+	titler.BorderColor3 = color
+	titler.TextColor3 = color
+	collapseBtn.TextColor3 = color
+	resizeBtn.TextColor3 = color
+	resizeBtn.BorderColor3 = color
+	scrollFrame.ScrollBarImageColor3 = color
+	searchBar.BorderColor3 = color
 	
 	for _, btnInfo in ipairs(buttons) do
-		btnInfo.button.BorderColor3 = themeColor
+		if btnInfo.button.Visible and not table.find(settings.blacklist, btnInfo.data.name) then
+			btnInfo.button.BorderColor3 = color
+		end
 	end
 	
 	updateLayout()
 end)
 
 -- =====================
--- INITIAL SETUP
+-- INITIALIZE
 -- =====================
-showNotification("HMD Hub loaded!", false)
+showNotification("HMD Hub Ultimate loaded!", false)
 updateLayout()
+
+print("HMD Hub Ultimate Edition - Ready!")
+print("Scripts: " .. #scriptData)
+print("Press " .. settings.toggleKey.Name .. " to toggle GUI")
