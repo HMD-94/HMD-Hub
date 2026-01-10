@@ -238,7 +238,7 @@ buttonBar.Size = UDim2.new(1, 0, 0, 35)
 buttonBar.BackgroundColor3 = Color3.fromRGB(15,15,15)
 buttonBar.BorderSizePixel = 0
 buttonBar.ScrollBarThickness = 4
-buttonBar.CanvasSize = UDim2.new(0, 600, 0, 35)
+buttonBar.CanvasSize = UDim2.new(0, 650, 0, 35)
 buttonBar.ScrollingDirection = Enum.ScrollingDirection.X
 buttonBar.ZIndex = 2
 
@@ -265,6 +265,7 @@ local addBtn = createTopBtn("+ Add", x, 60); x = x + 65
 local statsBtn = createTopBtn("Stats", x, 55); x = x + 60
 local importBtn = createTopBtn("Import", x, 60); x = x + 65
 local exportBtn = createTopBtn("Export", x, 60); x = x + 65
+local helpBtn = createTopBtn("Help", x, 50); x = x + 55
 local settingsBtn = createTopBtn("⚙", x, 35); x = x + 40
 local viewBtn = createTopBtn("Grid", x, 50)
 
@@ -329,6 +330,7 @@ local addPanel, addScroll = createPanel()
 local statsPanel, statsScroll = createPanel()
 local importPanel, importScroll = createPanel()
 local exportPanel, exportScroll = createPanel()
+local helpPanel, helpScroll = createPanel()
 local settingsPanel, settingsScroll = createPanel()
 
 -- =====================
@@ -365,6 +367,7 @@ collapseBtn.MouseButton1Click:Connect(function()
 		statsPanel.Visible = false
 		importPanel.Visible = false
 		exportPanel.Visible = false
+		helpPanel.Visible = false
 		settingsPanel.Visible = false
 		
 		-- Animate to mini size
@@ -862,6 +865,181 @@ importBtnSubmit.MouseButton1Click:Connect(function()
 end)
 
 -- =====================
+-- HELP PANEL
+-- =====================
+local helpTitle = Instance.new("TextLabel")
+helpTitle.Parent = helpScroll
+helpTitle.Size = UDim2.new(1, 0, 0, 30)
+helpTitle.BackgroundTransparency = 1
+helpTitle.Text = "=== HELP GUIDE ==="
+helpTitle.TextColor3 = Color3.new(1, 1, 1)
+helpTitle.Font = Enum.Font.SourceSansBold
+helpTitle.TextSize = 18
+helpTitle.ZIndex = 6
+
+local helpText = Instance.new("TextLabel")
+helpText.Parent = helpScroll
+helpText.Size = UDim2.new(1, -20, 0, 1400)
+helpText.Position = UDim2.new(0, 10, 0, 35)
+helpText.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+helpText.BorderSizePixel = 2
+helpText.TextColor3 = Color3.new(1, 1, 1)
+helpText.Font = Enum.Font.SourceSans
+helpText.TextSize = 12
+helpText.TextXAlignment = Enum.TextXAlignment.Left
+helpText.TextYAlignment = Enum.TextYAlignment.Top
+helpText.TextWrapped = true
+helpText.ZIndex = 6
+
+helpText.Text = [[
+=== BASIC CONTROLS ===
+
+PC:
+• Left-click: Execute script
+• Right-click: Add to favorites
+• Drag title bar: Move window
+• Drag ↕ button: Resize window
+• Mouse wheel: Scroll
+• Keyboard: Press Right Control to toggle GUI
+
+MOBILE:
+• Tap: Execute script
+• Hold 0.5 sec: Add to favorites
+• Drag title bar: Move window
+• Drag ↕ button: Resize window
+• Swipe: Scroll
+• No keyboard needed!
+
+=== BUTTON ICONS ===
+
+★ (Gold) = Favorited script
+☆ (Empty) = Not favorited
+📌 = Pinned to top
+⭐ = Rating (1-5 stars)
+×# = Times executed
+
+=== TOP MENU BUTTONS ===
+
+All - Show all scripts
+★ - Show only favorites
+Recent - Show recently used
++ Add - Add new script
+Stats - View statistics
+Import - Import script list
+Export - Export script list
+Help - This help guide
+⚙ - Settings panel
+Grid/List - Toggle view mode
+
+=== FEATURES ===
+
+FAVORITES:
+PC: Right-click any script
+Mobile: Hold script for 0.5 sec
+View: Click ★ button
+
+SEARCH:
+Type in search bar to filter scripts
+Works on script names
+
+ADD SCRIPT:
+1. Click "+ Add" button
+2. Enter Name and URL (required)
+3. Enter Category (optional)
+4. Click "ADD SCRIPT"
+
+IMPORT/EXPORT:
+Export: Click Export > Generate Code
+Import: Click Import > Paste code > Import
+Share your script lists with friends!
+
+SETTINGS:
+• Sound Effects - Toggle sounds
+• Safe Mode - Block all executions
+• Compact Mode - Smaller buttons
+• Themes - 6 color themes available
+• Keybind - Change toggle key
+• Reset - Reset all settings
+
+VIEW MODES:
+Grid - 2-3 columns of buttons
+List - Single column list
+Compact - Smaller button size
+
+=== STATISTICS ===
+
+View your hub stats:
+• Total scripts installed
+• Favorite count
+• Recent scripts used
+• Total executions
+• Pinned scripts
+• Current game info
+
+=== WINDOW CONTROLS ===
+
+— Button: Minimize to title bar only
++ Button: Restore full window
+↕ Button: Drag to resize window
+
+PC: Drag from any edge
+Mobile: Use ↕ button
+
+=== TIPS & TRICKS ===
+
+1. Use favorites for quick access
+2. Pin frequently used scripts
+3. Use search to find scripts fast
+4. Export to backup your list
+5. Compact mode for small screens
+6. Safe mode to prevent accidents
+7. Grid view fits more on screen
+8. List view shows full names
+
+=== TROUBLESHOOTING ===
+
+Script won't load?
+• Check your internet connection
+• URL might be invalid
+• Script may be patched
+
+GUI not showing?
+• Press your keybind (Right Control)
+• Check if it's minimized
+
+Can't favorite?
+PC: Hold right-click longer
+Mobile: Hold tap for full 0.5 sec
+
+=== KEYBOARD SHORTCUTS ===
+
+Right Control - Toggle GUI on/off
+(Can be changed in Settings)
+
+=== SUPPORT ===
+
+This is HMD Hub Ultimate Edition
+Version: 3.0
+Platform: PC & Mobile
+
+Features:
+✓ Cross-platform support
+✓ Favorites & pinning
+✓ Search & filter
+✓ Import/Export
+✓ 6 color themes
+✓ Statistics tracking
+✓ Custom keybinds
+✓ Safe mode
+✓ Sound effects
+✓ Auto-save settings
+
+Enjoy your scripts! 🚀
+]]
+
+helpScroll.CanvasSize = UDim2.new(0, 0, 0, 1450)
+
+-- =====================
 -- SETTINGS PANEL
 -- =====================
 local setTitle = Instance.new("TextLabel")
@@ -1191,6 +1369,11 @@ exportBtn.MouseButton1Click:Connect(function()
 	playSound("click")
 end)
 
+helpBtn.MouseButton1Click:Connect(function()
+	showPanel(helpPanel)
+	playSound("click")
+end)
+
 settingsBtn.MouseButton1Click:Connect(function()
 	showPanel(settingsPanel)
 	playSound("click")
@@ -1276,3 +1459,4 @@ updateLayout()
 print("HMD Hub Ultimate Edition - Ready!")
 print("Scripts: " .. #scriptData)
 print("Press " .. settings.toggleKey.Name .. " to toggle GUI")
+print("Click 'Help' button for instructions!")
