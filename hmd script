@@ -31,12 +31,140 @@ local settings = {
 	opacity = 1,
 	safeMode = false,
 	blacklist = {},
-	compactMode = false
+	compactMode = false,
+	language = "English"
 }
 
 local scriptData = {}
 local buttons = {}
 local currentFilter = "all"
+
+-- =====================
+-- TRANSLATIONS
+-- =====================
+local translations = {
+	English = {
+		title = "HMD HUB ULTIMATE",
+		all = "All",
+		favorites = "★",
+		recent = "Recent",
+		addScript = "+ Add",
+		stats = "Stats",
+		import = "Import",
+		export = "Export",
+		help = "Help",
+		settings = "⚙",
+		grid = "Grid",
+		list = "List",
+		search = "Search scripts...",
+		addScriptTitle = "=== ADD SCRIPT ===",
+		name = "Name:",
+		url = "URL:",
+		category = "Category:",
+		addButton = "ADD SCRIPT",
+		statsTitle = "=== STATISTICS ===",
+		scripts = "Scripts:",
+		pinned = "Pinned:",
+		executions = "Executions:",
+		game = "Game:",
+		exportTitle = "=== EXPORT ===",
+		generateCode = "GENERATE CODE",
+		importTitle = "=== IMPORT ===",
+		importButton = "IMPORT",
+		pasteCode = "Paste import code here...",
+		helpTitle = "=== HELP GUIDE ===",
+		settingsTitle = "=== SETTINGS ===",
+		soundEffects = "Sound Effects",
+		safeMode = "Safe Mode",
+		compactMode = "Compact Mode",
+		themeLabel = "THEME:",
+		keybindLabel = "KEYBIND:",
+		languageLabel = "LANGUAGE:",
+		current = "Current:",
+		changeKeybind = "Change Keybind",
+		resetSettings = "RESET SETTINGS",
+		loaded = "HMD Hub Ultimate loaded!",
+		scriptAdded = "✓ Script added!",
+		scriptBlacklisted = "Script is blacklisted!",
+		safeModeBlocked = "Safe mode - blocked",
+		scriptLoaded = "✓ %s loaded!",
+		scriptFailed = "✗ Failed: %s",
+		addedToFavorites = "Added to favorites",
+		removedFromFavorites = "Removed from favorites",
+		exportGenerated = "Export code generated!",
+		importSuccess = "✓ Imported successfully!",
+		importFailed = "✗ Invalid code!",
+		pasteFirst = "Paste code first!",
+		nameUrlRequired = "Name and URL required!",
+		themeChanged = "Theme: %s",
+		keybindSet = "Keybind set to %s",
+		settingsReset = "Settings reset!",
+		pressAnyKey = "Press any key..."
+	},
+	French = {
+		title = "HMD HUB ULTIME",
+		all = "Tous",
+		favorites = "★",
+		recent = "Récent",
+		addScript = "+ Ajouter",
+		stats = "Stats",
+		import = "Importer",
+		export = "Exporter",
+		help = "Aide",
+		settings = "⚙",
+		grid = "Grille",
+		list = "Liste",
+		search = "Rechercher des scripts...",
+		addScriptTitle = "=== AJOUTER SCRIPT ===",
+		name = "Nom:",
+		url = "URL:",
+		category = "Catégorie:",
+		addButton = "AJOUTER SCRIPT",
+		statsTitle = "=== STATISTIQUES ===",
+		scripts = "Scripts:",
+		pinned = "Épinglés:",
+		executions = "Exécutions:",
+		game = "Jeu:",
+		exportTitle = "=== EXPORTER ===",
+		generateCode = "GÉNÉRER CODE",
+		importTitle = "=== IMPORTER ===",
+		importButton = "IMPORTER",
+		pasteCode = "Coller le code ici...",
+		helpTitle = "=== GUIDE D'AIDE ===",
+		settingsTitle = "=== PARAMÈTRES ===",
+		soundEffects = "Effets sonores",
+		safeMode = "Mode sécurisé",
+		compactMode = "Mode compact",
+		themeLabel = "THÈME:",
+		keybindLabel = "RACCOURCI:",
+		languageLabel = "LANGUE:",
+		current = "Actuel:",
+		changeKeybind = "Changer raccourci",
+		resetSettings = "RÉINITIALISER",
+		loaded = "HMD Hub Ultime chargé!",
+		scriptAdded = "✓ Script ajouté!",
+		scriptBlacklisted = "Script sur liste noire!",
+		safeModeBlocked = "Mode sécurisé - bloqué",
+		scriptLoaded = "✓ %s chargé!",
+		scriptFailed = "✗ Échec: %s",
+		addedToFavorites = "Ajouté aux favoris",
+		removedFromFavorites = "Retiré des favoris",
+		exportGenerated = "Code exporté généré!",
+		importSuccess = "✓ Importé avec succès!",
+		importFailed = "✗ Code invalide!",
+		pasteFirst = "Coller le code d'abord!",
+		nameUrlRequired = "Nom et URL requis!",
+		themeChanged = "Thème: %s",
+		keybindSet = "Raccourci défini sur %s",
+		settingsReset = "Paramètres réinitialisés!",
+		pressAnyKey = "Appuyez sur une touche..."
+	}
+}
+
+local function t(key)
+	local lang = translations[settings.language] or translations.English
+	return lang[key] or key
+end
 
 -- =====================
 -- SAVE/LOAD FUNCTIONS
@@ -156,7 +284,7 @@ titler.Parent = frame
 titler.Size = UDim2.new(1, 0, 0, 40)
 titler.BackgroundColor3 = Color3.fromRGB(10,10,10)
 titler.BorderSizePixel = 3
-titler.Text = "HMD HUB ULTIMATE"
+titler.Text = t("title")
 titler.Font = Enum.Font.SourceSansBold
 titler.TextSize = 24
 titler.TextColor3 = Color3.new(1,1,1)
@@ -258,16 +386,16 @@ local function createTopBtn(text, pos, width)
 end
 
 local x = 5
-local allBtn = createTopBtn("All", x, 45); x = x + 50
-local favBtn = createTopBtn("★", x, 35); x = x + 40
-local recentBtn = createTopBtn("Recent", x, 55); x = x + 60
-local addBtn = createTopBtn("+ Add", x, 60); x = x + 65
-local statsBtn = createTopBtn("Stats", x, 55); x = x + 60
-local importBtn = createTopBtn("Import", x, 60); x = x + 65
-local exportBtn = createTopBtn("Export", x, 60); x = x + 65
-local helpBtn = createTopBtn("Help", x, 50); x = x + 55
-local settingsBtn = createTopBtn("⚙", x, 35); x = x + 40
-local viewBtn = createTopBtn("Grid", x, 50)
+local allBtn = createTopBtn(t("all"), x, 45); x = x + 50
+local favBtn = createTopBtn(t("favorites"), x, 35); x = x + 40
+local recentBtn = createTopBtn(t("recent"), x, 60); x = x + 65
+local addBtn = createTopBtn(t("addScript"), x, 75); x = x + 80
+local statsBtn = createTopBtn(t("stats"), x, 55); x = x + 60
+local importBtn = createTopBtn(t("import"), x, 70); x = x + 75
+local exportBtn = createTopBtn(t("export"), x, 70); x = x + 75
+local helpBtn = createTopBtn(t("help"), x, 50); x = x + 55
+local settingsBtn = createTopBtn(t("settings"), x, 35); x = x + 40
+local viewBtn = createTopBtn(t("grid"), x, 50)
 
 -- =====================
 -- SEARCH BAR
@@ -279,7 +407,7 @@ searchBar.Size = UDim2.new(1, -20, 0, 30)
 searchBar.BackgroundColor3 = Color3.fromRGB(20,20,20)
 searchBar.BorderSizePixel = 2
 searchBar.Text = ""
-searchBar.PlaceholderText = "Search scripts..."
+searchBar.PlaceholderText = t("search")
 searchBar.Font = Enum.Font.SourceSans
 searchBar.TextSize = 15
 searchBar.TextColor3 = Color3.new(1,1,1)
@@ -359,7 +487,6 @@ collapseBtn.MouseButton1Click:Connect(function()
 		collapseBtn.Text = "+"
 		lastSize = frame.Size
 		
-		-- Hide all elements except title
 		buttonBar.Visible = false
 		searchBar.Visible = false
 		scrollFrame.Visible = false
@@ -370,17 +497,14 @@ collapseBtn.MouseButton1Click:Connect(function()
 		helpPanel.Visible = false
 		settingsPanel.Visible = false
 		
-		-- Animate to mini size
 		TweenService:Create(frame, TweenInfo.new(0.25), {Size = miniSize}):Play()
 	else
 		collapseBtn.Text = "—"
 		
-		-- Show main elements
 		buttonBar.Visible = true
 		searchBar.Visible = true
 		scrollFrame.Visible = true
 		
-		-- Restore size
 		frame.Size = lastSize
 	end
 end)
@@ -469,7 +593,6 @@ local function createScriptBtn(data)
 	local isFav = table.find(settings.favorites, data.name) ~= nil
 	local isPin = table.find(settings.pinned, data.name) ~= nil
 	
-	-- Pin icon
 	local pin = Instance.new("TextLabel")
 	pin.Parent = btn
 	pin.Size = UDim2.new(0, 18, 0, 18)
@@ -479,7 +602,6 @@ local function createScriptBtn(data)
 	pin.TextSize = 12
 	pin.ZIndex = 5
 	
-	-- Star icon
 	local star = Instance.new("TextLabel")
 	star.Parent = btn
 	star.Size = UDim2.new(0, 20, 0, 20)
@@ -490,7 +612,6 @@ local function createScriptBtn(data)
 	star.TextColor3 = Color3.fromRGB(255, 215, 0)
 	star.ZIndex = 5
 	
-	-- Rating
 	local rating = settings.ratings[data.name] or 0
 	local ratingLbl = Instance.new("TextLabel")
 	ratingLbl.Parent = btn
@@ -502,7 +623,6 @@ local function createScriptBtn(data)
 	ratingLbl.TextXAlignment = Enum.TextXAlignment.Left
 	ratingLbl.ZIndex = 5
 	
-	-- Execution count
 	local execCount = settings.executionHistory[data.name] and #settings.executionHistory[data.name] or 0
 	local countLbl = Instance.new("TextLabel")
 	countLbl.Parent = btn
@@ -515,15 +635,14 @@ local function createScriptBtn(data)
 	countLbl.TextXAlignment = Enum.TextXAlignment.Right
 	countLbl.ZIndex = 5
 	
-	-- Click to execute
 	btn.MouseButton1Click:Connect(function()
 		if table.find(settings.blacklist, data.name) then
-			showNotification("Script is blacklisted!", true)
+			showNotification(t("scriptBlacklisted"), true)
 			return
 		end
 		
 		if settings.safeMode then
-			showNotification("Safe mode - blocked", true)
+			showNotification(t("safeModeBlocked"), true)
 			return
 		end
 		
@@ -534,7 +653,7 @@ local function createScriptBtn(data)
 		end)
 		
 		if success then
-			showNotification("✓ " .. data.name .. " loaded!", false)
+			showNotification(string.format(t("scriptLoaded"), data.name), false)
 			
 			table.insert(settings.recentlyUsed, 1, data.name)
 			if #settings.recentlyUsed > 10 then
@@ -544,11 +663,10 @@ local function createScriptBtn(data)
 			addToHistory(data.name)
 			saveSettings()
 		else
-			showNotification("✗ Failed: " .. data.name, true)
+			showNotification(string.format(t("scriptFailed"), data.name), true)
 		end
 	end)
 	
-	-- Long press for mobile / right-click for PC
 	local holding = false
 	local holdTime = 0
 	
@@ -565,16 +683,15 @@ local function createScriptBtn(data)
 					if holdTime >= 0.5 then
 						holding = false
 						
-						-- Toggle favorite
 						local idx = table.find(settings.favorites, data.name)
 						if idx then
 							table.remove(settings.favorites, idx)
 							star.Text = "☆"
-							showNotification("Removed from favorites", false)
+							showNotification(t("removedFromFavorites"), false)
 						else
 							table.insert(settings.favorites, data.name)
 							star.Text = "★"
-							showNotification("Added to favorites", false)
+							showNotification(t("addedToFavorites"), false)
 						end
 						saveSettings()
 						break
@@ -591,7 +708,6 @@ local function createScriptBtn(data)
 	return btn, data
 end
 
--- Create all buttons
 for i, data in ipairs(scriptData) do
 	local btn = createScriptBtn(data)
 	btn.Parent = scrollFrame
@@ -635,22 +751,22 @@ local addTitle = Instance.new("TextLabel")
 addTitle.Parent = addScroll
 addTitle.Size = UDim2.new(1, 0, 0, 30)
 addTitle.BackgroundTransparency = 1
-addTitle.Text = "=== ADD SCRIPT ==="
+addTitle.Text = t("addScriptTitle")
 addTitle.TextColor3 = Color3.new(1, 1, 1)
 addTitle.Font = Enum.Font.SourceSansBold
 addTitle.TextSize = 18
 addTitle.ZIndex = 6
 
 local y = 35
-local nameInput, y = createInput(addScroll, "Name:", y, "Script name...")
-local urlInput, y = createInput(addScroll, "URL:", y, "https://...")
-local catInput, y = createInput(addScroll, "Category:", y, "Tools/Games/etc")
+local nameInput, y = createInput(addScroll, t("name"), y, "Script name...")
+local urlInput, y = createInput(addScroll, t("url"), y, "https://...")
+local catInput, y = createInput(addScroll, t("category"), y, "Tools/Games/etc")
 
 local addBtnSubmit = Instance.new("TextButton")
 addBtnSubmit.Parent = addScroll
 addBtnSubmit.Size = UDim2.new(0, 140, 0, 35)
 addBtnSubmit.Position = UDim2.new(0.5, -70, 0, y + 10)
-addBtnSubmit.Text = "ADD SCRIPT"
+addBtnSubmit.Text = t("addButton")
 addBtnSubmit.BackgroundColor3 = Color3.fromRGB(50, 150, 50)
 addBtnSubmit.BorderSizePixel = 2
 addBtnSubmit.TextColor3 = Color3.new(1, 1, 1)
@@ -660,7 +776,7 @@ addBtnSubmit.ZIndex = 6
 
 addBtnSubmit.MouseButton1Click:Connect(function()
 	if nameInput.Text == "" or urlInput.Text == "" then
-		showNotification("Name and URL required!", true)
+		showNotification(t("nameUrlRequired"), true)
 		return
 	end
 	
@@ -677,7 +793,7 @@ addBtnSubmit.MouseButton1Click:Connect(function()
 	btn.Parent = scrollFrame
 	table.insert(buttons, {button = btn, data = newScript})
 	
-	showNotification("✓ Script added!", false)
+	showNotification(t("scriptAdded"), false)
 	playSound("success")
 	
 	nameInput.Text = ""
@@ -695,7 +811,7 @@ local statsTitle = Instance.new("TextLabel")
 statsTitle.Parent = statsScroll
 statsTitle.Size = UDim2.new(1, 0, 0, 30)
 statsTitle.BackgroundTransparency = 1
-statsTitle.Text = "=== STATISTICS ==="
+statsTitle.Text = t("statsTitle")
 statsTitle.TextColor3 = Color3.new(1, 1, 1)
 statsTitle.Font = Enum.Font.SourceSansBold
 statsTitle.TextSize = 18
@@ -725,28 +841,28 @@ task.spawn(function()
 			end
 			
 			statsTxt.Text = string.format([[
-Scripts: %d
+%s %d
 Favorites: %d
 Recent: %d
-Executions: %d
-Pinned: %d
+%s %d
+%s %d
 
-Game: %s
-			]], #scriptData, #settings.favorites, #settings.recentlyUsed, totalExec, #settings.pinned,
-			game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId).Name or "Unknown")
+%s %s
+			]], t("scripts"), #scriptData, #settings.favorites, #settings.recentlyUsed, t("executions"), totalExec, t("pinned"), #settings.pinned,
+			t("game"), game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId).Name or "Unknown")
 		end
 		task.wait(2)
 	end
 end)
 
 -- =====================
--- IMPORT/EXPORT PANELS
+-- EXPORT PANEL
 -- =====================
 local exportTitle = Instance.new("TextLabel")
 exportTitle.Parent = exportScroll
 exportTitle.Size = UDim2.new(1, 0, 0, 30)
 exportTitle.BackgroundTransparency = 1
-exportTitle.Text = "=== EXPORT ==="
+exportTitle.Text = t("exportTitle")
 exportTitle.TextColor3 = Color3.new(1, 1, 1)
 exportTitle.Font = Enum.Font.SourceSansBold
 exportTitle.TextSize = 18
@@ -771,9 +887,9 @@ exportBox.ZIndex = 6
 
 local exportBtnGen = Instance.new("TextButton")
 exportBtnGen.Parent = exportScroll
-exportBtnGen.Size = UDim2.new(0, 140, 0, 32)
-exportBtnGen.Position = UDim2.new(0.5, -70, 0, 295)
-exportBtnGen.Text = "GENERATE CODE"
+exportBtnGen.Size = UDim2.new(0, 160, 0, 32)
+exportBtnGen.Position = UDim2.new(0.5, -80, 0, 295)
+exportBtnGen.Text = t("generateCode")
 exportBtnGen.BackgroundColor3 = Color3.fromRGB(50, 100, 200)
 exportBtnGen.TextColor3 = Color3.new(1, 1, 1)
 exportBtnGen.Font = Enum.Font.SourceSansBold
@@ -785,15 +901,18 @@ exportBtnGen.MouseButton1Click:Connect(function()
 	local encoded = HttpService:JSONEncode(exportData)
 	local compressed = HttpService:Base64Encode(encoded)
 	exportBox.Text = compressed
-	showNotification("Export code generated!", false)
+	showNotification(t("exportGenerated"), false)
 	playSound("success")
 end)
 
+-- =====================
+-- IMPORT PANEL
+-- =====================
 local importTitle = Instance.new("TextLabel")
 importTitle.Parent = importScroll
 importTitle.Size = UDim2.new(1, 0, 0, 30)
 importTitle.BackgroundTransparency = 1
-importTitle.Text = "=== IMPORT ==="
+importTitle.Text = t("importTitle")
 importTitle.TextColor3 = Color3.new(1, 1, 1)
 importTitle.Font = Enum.Font.SourceSansBold
 importTitle.TextSize = 18
@@ -806,7 +925,7 @@ importBox.Position = UDim2.new(0, 10, 0, 35)
 importBox.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 importBox.BorderSizePixel = 2
 importBox.Text = ""
-importBox.PlaceholderText = "Paste import code here..."
+importBox.PlaceholderText = t("pasteCode")
 importBox.TextColor3 = Color3.new(1, 1, 1)
 importBox.Font = Enum.Font.Code
 importBox.TextSize = 11
@@ -821,7 +940,7 @@ local importBtnSubmit = Instance.new("TextButton")
 importBtnSubmit.Parent = importScroll
 importBtnSubmit.Size = UDim2.new(0, 140, 0, 32)
 importBtnSubmit.Position = UDim2.new(0.5, -70, 0, 295)
-importBtnSubmit.Text = "IMPORT"
+importBtnSubmit.Text = t("importButton")
 importBtnSubmit.BackgroundColor3 = Color3.fromRGB(50, 200, 100)
 importBtnSubmit.TextColor3 = Color3.new(1, 1, 1)
 importBtnSubmit.Font = Enum.Font.SourceSansBold
@@ -830,7 +949,7 @@ importBtnSubmit.ZIndex = 6
 
 importBtnSubmit.MouseButton1Click:Connect(function()
 	if importBox.Text == "" then
-		showNotification("Paste code first!", true)
+		showNotification(t("pasteFirst"), true)
 		return
 	end
 	
@@ -845,7 +964,7 @@ importBtnSubmit.MouseButton1Click:Connect(function()
 		end
 		saveScriptData()
 		
-		showNotification("✓ Imported successfully!", false)
+		showNotification(t("importSuccess"), false)
 		playSound("success")
 		importBox.Text = ""
 		
@@ -860,7 +979,7 @@ importBtnSubmit.MouseButton1Click:Connect(function()
 			table.insert(buttons, {button = btn, data = data})
 		end
 	else
-		showNotification("✗ Invalid code!", true)
+		showNotification(t("importFailed"), true)
 	end
 end)
 
@@ -871,7 +990,7 @@ local helpTitle = Instance.new("TextLabel")
 helpTitle.Parent = helpScroll
 helpTitle.Size = UDim2.new(1, 0, 0, 30)
 helpTitle.BackgroundTransparency = 1
-helpTitle.Text = "=== HELP GUIDE ==="
+helpTitle.Text = t("helpTitle")
 helpTitle.TextColor3 = Color3.new(1, 1, 1)
 helpTitle.Font = Enum.Font.SourceSansBold
 helpTitle.TextSize = 18
@@ -891,7 +1010,98 @@ helpText.TextYAlignment = Enum.TextYAlignment.Top
 helpText.TextWrapped = true
 helpText.ZIndex = 6
 
-helpText.Text = [[
+if settings.language == "French" then
+	helpText.Text = [[
+=== CONTRÔLES DE BASE ===
+
+PC:
+• Clic gauche: Exécuter script
+• Clic droit: Ajouter aux favoris
+• Glisser barre titre: Déplacer fenêtre
+• Glisser bouton ↕: Redimensionner
+• Molette souris: Défiler
+• Clavier: Ctrl Droit pour basculer GUI
+
+MOBILE:
+• Appuyer: Exécuter script
+• Maintenir 0.5s: Ajouter aux favoris
+• Glisser barre titre: Déplacer
+• Glisser bouton ↕: Redimensionner
+• Balayer: Défiler
+• Pas de clavier nécessaire!
+
+=== ICÔNES BOUTONS ===
+
+★ (Or) = Script favoris
+☆ (Vide) = Pas favoris
+📌 = Épinglé en haut
+⭐ = Notation (1-5 étoiles)
+×# = Fois exécuté
+
+=== BOUTONS MENU ===
+
+Tous - Tous les scripts
+★ - Favoris uniquement
+Récent - Récemment utilisés
++ Ajouter - Nouveau script
+Stats - Voir statistiques
+Importer - Importer liste
+Exporter - Exporter liste
+Aide - Ce guide
+⚙ - Paramètres
+Grille/Liste - Changer vue
+
+=== FONCTIONNALITÉS ===
+
+FAVORIS:
+PC: Clic droit sur script
+Mobile: Maintenir 0.5s
+Voir: Cliquer bouton ★
+
+RECHERCHE:
+Taper dans barre de recherche
+Fonctionne sur noms de scripts
+
+AJOUTER SCRIPT:
+1. Cliquer "+ Ajouter"
+2. Entrer Nom et URL (requis)
+3. Entrer Catégorie (optionnel)
+4. Cliquer "AJOUTER SCRIPT"
+
+IMPORTER/EXPORTER:
+Exporter: Cliquer Exporter > Générer
+Importer: Cliquer Importer > Coller > Importer
+Partagez vos listes avec amis!
+
+PARAMÈTRES:
+• Effets sonores - Activer/désactiver
+• Mode sécurisé - Bloquer exécutions
+• Mode compact - Boutons plus petits
+• Thèmes - 6 thèmes disponibles
+• Raccourci - Changer touche
+• Langue - Français/Anglais
+• Réinitialiser - Tout réinitialiser
+
+MODES VUE:
+Grille - 2-3 colonnes de boutons
+Liste - Colonne unique
+Compact - Boutons plus petits
+
+=== ASTUCES ===
+
+1. Utilisez favoris pour accès rapide
+2. Épinglez scripts fréquents
+3. Recherche pour trouver rapidement
+4. Exportez pour sauvegarder
+5. Mode compact pour petits écrans
+6. Mode sécurisé contre accidents
+7. Vue grille pour plus à l'écran
+8. Vue liste pour noms complets
+
+Profitez de vos scripts! 🚀
+	]]
+else
+	helpText.Text = [[
 === BASIC CONTROLS ===
 
 PC:
@@ -959,31 +1169,13 @@ SETTINGS:
 • Compact Mode - Smaller buttons
 • Themes - 6 color themes available
 • Keybind - Change toggle key
+• Language - English/French
 • Reset - Reset all settings
 
 VIEW MODES:
 Grid - 2-3 columns of buttons
 List - Single column list
 Compact - Smaller button size
-
-=== STATISTICS ===
-
-View your hub stats:
-• Total scripts installed
-• Favorite count
-• Recent scripts used
-• Total executions
-• Pinned scripts
-• Current game info
-
-=== WINDOW CONTROLS ===
-
-— Button: Minimize to title bar only
-+ Button: Restore full window
-↕ Button: Drag to resize window
-
-PC: Drag from any edge
-Mobile: Use ↕ button
 
 === TIPS & TRICKS ===
 
@@ -996,46 +1188,9 @@ Mobile: Use ↕ button
 7. Grid view fits more on screen
 8. List view shows full names
 
-=== TROUBLESHOOTING ===
-
-Script won't load?
-• Check your internet connection
-• URL might be invalid
-• Script may be patched
-
-GUI not showing?
-• Press your keybind (Right Control)
-• Check if it's minimized
-
-Can't favorite?
-PC: Hold right-click longer
-Mobile: Hold tap for full 0.5 sec
-
-=== KEYBOARD SHORTCUTS ===
-
-Right Control - Toggle GUI on/off
-(Can be changed in Settings)
-
-=== SUPPORT ===
-
-This is HMD Hub Ultimate Edition
-Version: 3.0
-Platform: PC & Mobile
-
-Features:
-✓ Cross-platform support
-✓ Favorites & pinning
-✓ Search & filter
-✓ Import/Export
-✓ 6 color themes
-✓ Statistics tracking
-✓ Custom keybinds
-✓ Safe mode
-✓ Sound effects
-✓ Auto-save settings
-
 Enjoy your scripts! 🚀
-]]
+	]]
+end
 
 helpScroll.CanvasSize = UDim2.new(0, 0, 0, 1450)
 
@@ -1046,7 +1201,7 @@ local setTitle = Instance.new("TextLabel")
 setTitle.Parent = settingsScroll
 setTitle.Size = UDim2.new(1, 0, 0, 30)
 setTitle.BackgroundTransparency = 1
-setTitle.Text = "=== SETTINGS ==="
+setTitle.Text = t("settingsTitle")
 setTitle.TextColor3 = Color3.new(1, 1, 1)
 setTitle.Font = Enum.Font.SourceSansBold
 setTitle.TextSize = 18
@@ -1089,9 +1244,9 @@ local function createToggle(label, key, yPos)
 	return yPos + 32
 end
 
-sY = createToggle("Sound Effects", "soundEnabled", sY)
-sY = createToggle("Safe Mode", "safeMode", sY)
-sY = createToggle("Compact Mode", "compactMode", sY)
+sY = createToggle(t("soundEffects"), "soundEnabled", sY)
+sY = createToggle(t("safeMode"), "safeMode", sY)
+sY = createToggle(t("compactMode"), "compactMode", sY)
 
 sY = sY + 10
 
@@ -1101,7 +1256,7 @@ themeLbl.Parent = settingsScroll
 themeLbl.Size = UDim2.new(1, -20, 0, 22)
 themeLbl.Position = UDim2.new(0, 10, 0, sY)
 themeLbl.BackgroundTransparency = 1
-themeLbl.Text = "THEME:"
+themeLbl.Text = t("themeLabel")
 themeLbl.TextColor3 = Color3.new(1, 1, 1)
 themeLbl.Font = Enum.Font.SourceSansBold
 themeLbl.TextSize = 15
@@ -1127,7 +1282,7 @@ for themeName, _ in pairs(themes) do
 	btn.MouseButton1Click:Connect(function()
 		settings.theme = themeName
 		saveSettings()
-		showNotification("Theme: " .. themeName, false)
+		showNotification(string.format(t("themeChanged"), themeName), false)
 		playSound("click")
 	end)
 	
@@ -1136,13 +1291,63 @@ end
 
 sY = sY + math.ceil(tIdx / 4) * 32 + 20
 
+-- Language selector
+local langLbl = Instance.new("TextLabel")
+langLbl.Parent = settingsScroll
+langLbl.Size = UDim2.new(1, -20, 0, 22)
+langLbl.Position = UDim2.new(0, 10, 0, sY)
+langLbl.BackgroundTransparency = 1
+langLbl.Text = t("languageLabel")
+langLbl.TextColor3 = Color3.new(1, 1, 1)
+langLbl.Font = Enum.Font.SourceSansBold
+langLbl.TextSize = 15
+langLbl.TextXAlignment = Enum.TextXAlignment.Left
+langLbl.ZIndex = 6
+
+sY = sY + 26
+
+local function createLangBtn(lang, xPos)
+	local btn = Instance.new("TextButton")
+	btn.Parent = settingsScroll
+	btn.Size = UDim2.new(0, 80, 0, 28)
+	btn.Position = UDim2.new(0, xPos, 0, sY)
+	btn.Text = lang
+	btn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+	btn.BorderSizePixel = 2
+	btn.TextColor3 = Color3.new(1, 1, 1)
+	btn.Font = Enum.Font.SourceSans
+	btn.TextSize = 12
+	btn.ZIndex = 6
+	
+	btn.MouseButton1Click:Connect(function()
+		settings.language = lang
+		saveSettings()
+		showNotification("Language: " .. lang, false)
+		playSound("click")
+		
+		-- Reload GUI to update all text
+		task.wait(0.5)
+		if game.CoreGui:FindFirstChild("HMD_MAIN") then
+			game.CoreGui.HMD_MAIN:Destroy()
+		end
+		loadstring(game:HttpGet("YOUR_SCRIPT_URL_HERE"))()
+	end)
+	
+	return btn
+end
+
+createLangBtn("English", 10)
+createLangBtn("French", 95)
+
+sY = sY + 40
+
 -- Keybind section
 local keybindLbl = Instance.new("TextLabel")
 keybindLbl.Parent = settingsScroll
 keybindLbl.Size = UDim2.new(1, -20, 0, 22)
 keybindLbl.Position = UDim2.new(0, 10, 0, sY)
 keybindLbl.BackgroundTransparency = 1
-keybindLbl.Text = "KEYBIND:"
+keybindLbl.Text = t("keybindLabel")
 keybindLbl.TextColor3 = Color3.new(1, 1, 1)
 keybindLbl.Font = Enum.Font.SourceSansBold
 keybindLbl.TextSize = 15
@@ -1157,7 +1362,7 @@ currentKeyLbl.Size = UDim2.new(1, -20, 0, 25)
 currentKeyLbl.Position = UDim2.new(0, 10, 0, sY)
 currentKeyLbl.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 currentKeyLbl.BorderSizePixel = 2
-currentKeyLbl.Text = "Current: " .. settings.toggleKey.Name
+currentKeyLbl.Text = t("current") .. " " .. settings.toggleKey.Name
 currentKeyLbl.TextColor3 = Color3.new(1, 1, 1)
 currentKeyLbl.Font = Enum.Font.SourceSans
 currentKeyLbl.TextSize = 13
@@ -1167,9 +1372,9 @@ sY = sY + 30
 
 local changeKeyBtn = Instance.new("TextButton")
 changeKeyBtn.Parent = settingsScroll
-changeKeyBtn.Size = UDim2.new(0, 140, 0, 30)
+changeKeyBtn.Size = UDim2.new(0, 150, 0, 30)
 changeKeyBtn.Position = UDim2.new(0, 10, 0, sY)
-changeKeyBtn.Text = "Change Keybind"
+changeKeyBtn.Text = t("changeKeybind")
 changeKeyBtn.BackgroundColor3 = Color3.fromRGB(50, 100, 200)
 changeKeyBtn.BorderSizePixel = 2
 changeKeyBtn.TextColor3 = Color3.new(1, 1, 1)
@@ -1178,15 +1383,15 @@ changeKeyBtn.TextSize = 13
 changeKeyBtn.ZIndex = 6
 
 changeKeyBtn.MouseButton1Click:Connect(function()
-	changeKeyBtn.Text = "Press any key..."
+	changeKeyBtn.Text = t("pressAnyKey")
 	local connection
 	connection = UserInputService.InputBegan:Connect(function(input, processed)
 		if input.UserInputType == Enum.UserInputType.Keyboard then
 			settings.toggleKey = input.KeyCode
-			currentKeyLbl.Text = "Current: " .. input.KeyCode.Name
-			changeKeyBtn.Text = "Change Keybind"
+			currentKeyLbl.Text = t("current") .. " " .. input.KeyCode.Name
+			changeKeyBtn.Text = t("changeKeybind")
 			saveSettings()
-			showNotification("Keybind set to " .. input.KeyCode.Name, false)
+			showNotification(string.format(t("keybindSet"), input.KeyCode.Name), false)
 			connection:Disconnect()
 		end
 	end)
@@ -1198,7 +1403,7 @@ local resetBtn = Instance.new("TextButton")
 resetBtn.Parent = settingsScroll
 resetBtn.Size = UDim2.new(0, 160, 0, 35)
 resetBtn.Position = UDim2.new(0.5, -80, 0, sY)
-resetBtn.Text = "RESET SETTINGS"
+resetBtn.Text = t("resetSettings")
 resetBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
 resetBtn.TextColor3 = Color3.new(1, 1, 1)
 resetBtn.Font = Enum.Font.SourceSansBold
@@ -1222,11 +1427,12 @@ resetBtn.MouseButton1Click:Connect(function()
 		opacity = 1,
 		safeMode = false,
 		blacklist = {},
-		compactMode = false
+		compactMode = false,
+		language = "English"
 	}
 	saveSettings()
-	currentKeyLbl.Text = "Current: " .. settings.toggleKey.Name
-	showNotification("Settings reset!", false)
+	currentKeyLbl.Text = t("current") .. " " .. settings.toggleKey.Name
+	showNotification(t("settingsReset"), false)
 	playSound("success")
 end)
 
@@ -1259,7 +1465,6 @@ local function filterButtons(filter, search)
 		end
 	end
 	
-	-- Sort: pinned first
 	table.sort(visible, function(a, b)
 		local aPin = table.find(settings.pinned, a.data.name) ~= nil
 		local bPin = table.find(settings.pinned, b.data.name) ~= nil
@@ -1382,10 +1587,10 @@ end)
 viewBtn.MouseButton1Click:Connect(function()
 	if settings.viewMode == "grid" then
 		settings.viewMode = "list"
-		viewBtn.Text = "List"
+		viewBtn.Text = t("list")
 	else
 		settings.viewMode = "grid"
-		viewBtn.Text = "Grid"
+		viewBtn.Text = t("grid")
 	end
 	saveSettings()
 	updateLayout()
@@ -1453,10 +1658,10 @@ end)
 -- =====================
 -- INITIALIZE
 -- =====================
-showNotification("HMD Hub Ultimate loaded!", false)
+showNotification(t("loaded"), false)
 updateLayout()
 
 print("HMD Hub Ultimate Edition - Ready!")
 print("Scripts: " .. #scriptData)
 print("Press " .. settings.toggleKey.Name .. " to toggle GUI")
-print("Click 'Help' button for instructions!")
+print("Language: " .. settings.language)
