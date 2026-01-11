@@ -221,6 +221,7 @@ local function loadScriptData()
 		{name = "Walkspeed", url = "https://raw.githubusercontent.com/MrScripterrFr/Speed-Changer/main/Speed%20Changer", category = "Tools"},
 		{name = "PVP Hub", url = "https://raw.githubusercontent.com/xspeedHub0/Zlhub/main/ZLPVPreview.lua", category = "Games"},
 		{name = "Walk Animation", url = "https://raw.githubusercontent.com/RubyBoo4life/Scripts/main/animations.vis", category = "Animation"},
+        {name = "Brainrot Tsunami", url = "https://github.com/HMD-94/HMD-Hub/blob/main/tsunamie", category = "Tools"},
 	}
 end
 
