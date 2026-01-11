@@ -26,3 +26,4 @@ loadstring(game:HttpGet("https://api.luarmor.net/files/v3/loaders/d8824b23a4d9f2
 
 loadstring(game:HttpGet("https://api.rubis.app/v2/scrap/8D3eLPHrBHRKYTom/raw"))()
 loadstring(game:HttpGet("https://api.luarmor.net/files/v3/loaders/67b30f70171068a03119225ccb621516.lua"))()
+loadstring(game:HttpGet("https://api.luarmor.net/files/v4/loaders/1f23c354e35199edd45ab34f1cb268a9.lua"))()
