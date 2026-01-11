@@ -1,0 +1,235 @@
+--[[
+	WARNING: Heads up! This script has not been verified by ScriptBlox. Use at your own risk!
+]]
+-- Xeno GUI | Toggle: L | Movable | Close Button | Tabs | Main + Scripts
+
+local UIS = game:GetService("UserInputService")
+local Players = game:GetService("Players")
+local Player = Players.LocalPlayer
+
+-- GUI
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "EscapeTsunamiGUI"
+ScreenGui.Parent = Player:WaitForChild("PlayerGui")
+ScreenGui.ResetOnSpawn = false
+
+-- 🔔 EXECUTION NOTIFICATION
+pcall(function()
+	game:GetService("StarterGui"):SetCore("SendNotification", {
+		Title = "Xeno GUI",
+		Text = "Toggle GUI with L",
+		Duration = 4
+	})
+end)
+
+-- Main Frame
+local Frame = Instance.new("Frame")
+Frame.Size = UDim2.fromOffset(520, 390)
+Frame.Position = UDim2.fromScale(0.25, 0.2)
+Frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+Frame.BorderSizePixel = 0
+Frame.Parent = ScreenGui
+Instance.new("UICorner", Frame).CornerRadius = UDim.new(0, 10)
+
+-- Title
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1, -40, 0, 30)
+Title.BackgroundTransparency = 1
+Title.Text = "Escape Tsunami For Brainrots"
+Title.TextColor3 = Color3.new(1,1,1)
+Title.Font = Enum.Font.GothamBold
+Title.TextSize = 18
+Title.Parent = Frame
+
+-- Close Button
+local CloseBtn = Instance.new("TextButton")
+CloseBtn.Size = UDim2.new(0, 30, 0, 30)
+CloseBtn.Position = UDim2.new(1, -30, 0, 0)
+CloseBtn.Text = "X"
+CloseBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+CloseBtn.TextColor3 = Color3.new(1,1,1)
+CloseBtn.Font = Enum.Font.GothamBold
+CloseBtn.TextSize = 16
+CloseBtn.Parent = Frame
+CloseBtn.MouseButton1Click:Connect(function()
+	ScreenGui:Destroy()
+end)
+
+-- Tabs bar
+local TabsBar = Instance.new("Frame")
+TabsBar.Size = UDim2.new(1, 0, 0, 35)
+TabsBar.Position = UDim2.new(0, 0, 0, 30)
+TabsBar.BackgroundTransparency = 1
+TabsBar.Parent = Frame
+
+-- Content
+local Content = Instance.new("Frame")
+Content.Size = UDim2.new(1, 0, 1, -65)
+Content.Position = UDim2.new(0, 0, 0, 65)
+Content.BackgroundTransparency = 1
+Content.Parent = Frame
+
+local function createTab(name, xPos)
+	local btn = Instance.new("TextButton")
+	btn.Size = UDim2.new(0, 110, 1, 0)
+	btn.Position = UDim2.new(0, xPos, 0, 0)
+	btn.Text = name
+	btn.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+	btn.TextColor3 = Color3.new(1,1,1)
+	btn.Font = Enum.Font.GothamBold
+	btn.TextSize = 14
+	btn.Parent = TabsBar
+	Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
+
+	local page = Instance.new("ScrollingFrame")
+	page.Size = UDim2.new(1, 0, 1, 0)
+	page.CanvasSize = UDim2.new(0, 0, 3, 0)
+	page.ScrollBarThickness = 8
+	page.BackgroundTransparency = 1
+	page.Visible = false
+	page.Parent = Content
+
+	btn.MouseButton1Click:Connect(function()
+		for _,v in pairs(Content:GetChildren()) do
+			if v:IsA("ScrollingFrame") then
+				v.Visible = false
+			end
+		end
+		page.Visible = true
+	end)
+
+	return page
+end
+
+-- Tabs
+local MainTab = createTab("Main", 0)
+local ScriptsTab = createTab("Scripts", 120)
+MainTab.Visible = true
+
+-- === MAIN TAB ===
+local SpawnBtn = Instance.new("TextButton")
+SpawnBtn.Size = UDim2.new(0, 220, 0, 40)
+SpawnBtn.Position = UDim2.new(0.5, -110, 0, 15)
+SpawnBtn.Text = "Teleport to Spawn"
+SpawnBtn.BackgroundColor3 = Color3.fromRGB(50, 150, 250)
+SpawnBtn.TextColor3 = Color3.new(1,1,1)
+SpawnBtn.Font = Enum.Font.GothamBold
+SpawnBtn.TextSize = 16
+SpawnBtn.Parent = MainTab
+Instance.new("UICorner", SpawnBtn)
+
+SpawnBtn.MouseButton1Click:Connect(function()
+	local c = Player.Character or Player.CharacterAdded:Wait()
+	c.HumanoidRootPart.CFrame =
+		CFrame.new(124, 3.1, 1) * CFrame.Angles(0, math.rad(-90), 0)
+end)
+
+local EndBtn = SpawnBtn:Clone()
+EndBtn.Text = "Go to End"
+EndBtn.Position = UDim2.new(0.5, -110, 0, 65)
+EndBtn.BackgroundColor3 = Color3.fromRGB(50, 250, 150)
+EndBtn.Parent = MainTab
+
+EndBtn.MouseButton1Click:Connect(function()
+	local c = Player.Character or Player.CharacterAdded:Wait()
+	c.HumanoidRootPart.CFrame =
+		CFrame.new(2249, -2.84, 1) * CFrame.Angles(0, math.rad(-90), 0)
+end)
+
+-- Delete Tsunami
+local DeleteTsunamiBtn = EndBtn:Clone()
+DeleteTsunamiBtn.Text = "Delete Tsunami"
+DeleteTsunamiBtn.Position = UDim2.new(0.5, -110, 0, 115)
+DeleteTsunamiBtn.BackgroundColor3 = Color3.fromRGB(250, 80, 80)
+DeleteTsunamiBtn.Parent = MainTab
+
+DeleteTsunamiBtn.MouseButton1Click:Connect(function()
+	for _, obj in ipairs(workspace:GetDescendants()) do
+		if obj:IsA("BasePart") and (obj.Name == "Hitbox" or obj.Name == "TsunamiWave") then
+			obj:Destroy()
+		end
+	end
+
+	workspace.DescendantAdded:Connect(function(obj)
+		if obj:IsA("BasePart") and (obj.Name == "Hitbox" or obj.Name == "TsunamiWave") then
+			obj:Destroy()
+		end
+	end)
+end)
+
+-- Delete VIP Walls
+local DeleteVIPBtn = EndBtn:Clone()
+DeleteVIPBtn.Text = "Delete VIP Walls"
+DeleteVIPBtn.Position = UDim2.new(0.5, -110, 0, 165)
+DeleteVIPBtn.BackgroundColor3 = Color3.fromRGB(180, 80, 250)
+DeleteVIPBtn.Parent = MainTab
+
+DeleteVIPBtn.MouseButton1Click:Connect(function()
+	for _, obj in ipairs(workspace:GetDescendants()) do
+		if obj.Name == "VIP" and obj.Parent and obj.Parent.Name == "VIPWalls" then
+			obj:Destroy()
+		end
+	end
+
+	workspace.DescendantAdded:Connect(function(obj)
+		if obj.Name == "VIP" and obj.Parent and obj.Parent.Name == "VIPWalls" then
+			obj:Destroy()
+		end
+	end)
+end)
+
+-- === SCRIPTS TAB ===
+local function scriptButton(text, y, callback)
+	local b = Instance.new("TextButton")
+	b.Size = UDim2.new(0, 240, 0, 40)
+	b.Position = UDim2.new(0.5, -120, 0, y)
+	b.Text = text
+	b.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+	b.TextColor3 = Color3.new(1,1,1)
+	b.Font = Enum.Font.GothamBold
+	b.TextSize = 14
+	b.Parent = ScriptsTab
+	Instance.new("UICorner", b)
+	b.MouseButton1Click:Connect(callback)
+end
+
+scriptButton("Instant Proximity (sometimes disabled)", 15, function()
+	for _,v in ipairs(workspace:GetDescendants()) do
+		if v:IsA("ProximityPrompt") then
+			v.HoldDuration = 0
+		end
+	end
+end)
+
+-- Toggle GUI (L)
+UIS.InputBegan:Connect(function(i,g)
+	if not g and i.KeyCode == Enum.KeyCode.L then
+		ScreenGui.Enabled = not ScreenGui.Enabled
+	end
+end)
+
+-- Drag GUI
+local dragging, startPos, dragStart
+Frame.InputBegan:Connect(function(i)
+	if i.UserInputType == Enum.UserInputType.MouseButton1 then
+		dragging = true
+		startPos = Frame.Position
+		dragStart = i.Position
+	end
+end)
+
+UIS.InputChanged:Connect(function(i)
+	if dragging and i.UserInputType == Enum.UserInputType.MouseMovement then
+		local delta = i.Position - dragStart
+		Frame.Position = UDim2.new(
+			startPos.X.Scale, startPos.X.Offset + delta.X,
+			startPos.Y.Scale, startPos.Y.Offset + delta.Y
+		)
+	end
+end)
+
+UIS.InputEnded:Connect(function(i)
+	if i.UserInputType == Enum.UserInputType.MouseButton1 then
+		dragging = false
+	end
+end)
