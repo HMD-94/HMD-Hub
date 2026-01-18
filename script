@@ -30,3 +30,4 @@ loadstring(game:HttpGet("https://api.luarmor.net/files/v4/loaders/1f23c354e35199
 loadstring(game:HttpGet("https://raw.githubusercontent.com/Chiriku2013/BananaCatHub/refs/heads/main/BananaCatHub.lua"))()
 loadstring(game:HttpGet("https://api.luarmor.net/files/v4/loaders/a06e6ff3c327ceb853bedb02ede3c84a.lua"))()
 loadstring(game:HttpGet("https://pastebin.com/raw/pB6t6wbC"))()
+loadstring(game:HttpGet("https://pastefy.app/YQXllBzu/raw"))()
