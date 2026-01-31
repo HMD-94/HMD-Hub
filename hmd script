@@ -224,6 +224,7 @@ local function loadScriptData()
         {name = "Brainrot Tsunami", url = "https://raw.githubusercontent.com/HMD-94/HMD-Hub/refs/heads/main/tsunamie", category = "Tools"},
         {name = "Nameless Hub", url = "https://raw.githubusercontent.com/ily123950/Vulkan/refs/heads/main/Tr", category = "Tools"},
         {name = "auto ping pong", url = "https://api.rubis.app/v2/scrap/8D3eLPHrBHRKYTom/raw", category = "Tools"},
+        {name = "spam paintball (sab)", url = "https://raw.githubusercontent.com/LucasggkX/Games/refs/heads/main/Paintba", category = "Tools"},
 	}
 end
 
