@@ -225,6 +225,7 @@ local function loadScriptData()
         {name = "Nameless Hub", url = "https://raw.githubusercontent.com/ily123950/Vulkan/refs/heads/main/Tr", category = "Tools"},
         {name = "auto ping pong", url = "https://api.rubis.app/v2/scrap/8D3eLPHrBHRKYTom/raw", category = "Tools"},
         {name = "spam paintball", url = "https://raw.githubusercontent.com/LucasggkX/Games/refs/heads/main/Paintball.lua", category = "Tools"},
+        {name = "Hilusion Hub", url = "https://raw.githubusercontent.com/fdellacortw-svg/Website/refs/heads/main/config1", category = "Tools"},
 	}
 end
 
