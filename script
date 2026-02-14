@@ -52,3 +52,4 @@ loadstring(game:HttpGet("https://raw.githubusercontent.com/aphiSab/ajjan/refs/he
 @mitchel bodiongan: loadstring(game:HttpGet("https://raw.githubusercontent.com/xspeedHub0/Zlhub/main/ZLPVPreview.lua"))()
 @شَارِف🇩🇿: loadstring(game:HttpGet("https://pastefy.app/ZyOk8na6/raw"))()
 @_krastevv_: loadstring(game:HttpGet("https://pastefy.app/hzjpKRdq/raw"))()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/DeltaScriptsV2/OpDuelScriptV2/refs/heads/main/OpPremiumScriptV2"))()
