@@ -51,3 +51,4 @@ loadstring(game:HttpGet("https://raw.githubusercontent.com/rexzysab/stealabrainr
 loadstring(game:HttpGet("https://raw.githubusercontent.com/aphiSab/ajjan/refs/heads/main/loader"))()
 @mitchel bodiongan: loadstring(game:HttpGet("https://raw.githubusercontent.com/xspeedHub0/Zlhub/main/ZLPVPreview.lua"))()
 @شَارِف🇩🇿: loadstring(game:HttpGet("https://pastefy.app/ZyOk8na6/raw"))()
+@_krastevv_: loadstring(game:HttpGet("https://pastefy.app/hzjpKRdq/raw"))()
