@@ -213,7 +213,7 @@ local function loadScriptData()
 	scriptData = {
 		{name = "Emote GUI", url = "https://raw.githubusercontent.com/Gazer-Ha/Free-emote/refs/heads/main/Delta%20mad%20stuffs", category = "Animation"},
 		{name = "Steal Brainrot", url = "https://raw.githubusercontent.com/tienkhanh1/spicy/main/Chilli.lua", category = "Tools"},
-		{name = "Blox Fruit", url = "https://rawscripts.net/raw/Universal-Script-Blox-Fruit-Control-Update-78066", category = "Games"},
+		{name = "Blox Fruit", url = "https://raw.githubusercontent.com/TlDinhKhoi/Xeter/refs/heads/main/Main.lua", category = "Games"},
 		{name = "Auto Block", url = "https://raw.githubusercontent.com/sabscripts063-cloud/Kdml-Not-Me/main/BlockPlayer", category = "Tools"},
 		{name = "Fly GUI", url = "https://raw.githubusercontent.com/HMD-94/HMD-Hub/refs/heads/main/HMD%20fly", category = "Tools"},
 		{name = "Admin Cmd", url = "https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source", category = "Tools"},
