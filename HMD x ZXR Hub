@@ -1,0 +1,1619 @@
+--[[ HMD AND ZXF HUB - FIXED EDITION WITH UI CORNERS ]]--
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+local HttpService = game:GetService("HttpService")
+local Players = game:GetService("Players")
+
+-- =====================
+-- REMOVE OLD GUI
+-- =====================
+if game.CoreGui:FindFirstChild("HMD_MAIN") then
+	game.CoreGui.HMD_MAIN:Destroy()
+end
+
+-- =====================
+-- SETTINGS & DATA
+-- =====================
+local settings = {
+	theme = "RGB",
+	viewMode = "grid",
+	savedPosition = nil,
+	savedSize = nil,
+	favorites = {},
+	pinned = {},
+	recentlyUsed = {},
+	executionHistory = {},
+	ratings = {},
+	notes = {},
+	toggleKey = Enum.KeyCode.RightControl,
+	soundEnabled = true,
+	opacity = 1,
+	safeMode = false,
+	blacklist = {},
+	compactMode = false,
+	language = "English"
+}
+
+local scriptData = {}
+local buttons = {}
+local currentFilter = "all"
+
+-- =====================
+-- TRANSLATIONS
+-- =====================
+local translations = {
+	English = {
+		title = "HMD X ZXR HUB",
+		all = "All",
+		favorites = "★",
+		recent = "Recent",
+		addScript = "+ Add",
+		stats = "Stats",
+		import = "Import",
+		export = "Export",
+		help = "Help",
+		settings = "⚙",
+		grid = "Grid",
+		list = "List",
+		search = "Search scripts...",
+		addScriptTitle = "=== ADD SCRIPT ===",
+		name = "Name:",
+		url = "URL:",
+		category = "Category:",
+		addButton = "ADD SCRIPT",
+		statsTitle = "=== STATISTICS ===",
+		scripts = "Scripts:",
+		pinned = "Pinned:",
+		executions = "Executions:",
+		game = "Game:",
+		exportTitle = "=== EXPORT ===",
+		generateCode = "GENERATE CODE",
+		importTitle = "=== IMPORT ===",
+		importButton = "IMPORT",
+		pasteCode = "Paste import code here...",
+		helpTitle = "=== HELP GUIDE ===",
+		settingsTitle = "=== SETTINGS ===",
+		soundEffects = "Sound Effects",
+		safeMode = "Safe Mode",
+		compactMode = "Compact Mode",
+		themeLabel = "THEME:",
+		keybindLabel = "KEYBIND:",
+		languageLabel = "LANGUAGE:",
+		current = "Current:",
+		changeKeybind = "Change Keybind",
+		resetSettings = "RESET SETTINGS",
+		loaded = "HMD Hub Ultimate loaded!",
+		scriptAdded = "✓ Script added!",
+		scriptBlacklisted = "Script is blacklisted!",
+		safeModeBlocked = "Safe mode - blocked",
+		scriptLoaded = "✓ %s loaded!",
+		scriptFailed = "✗ Failed: %s",
+		addedToFavorites = "Added to favorites",
+		removedFromFavorites = "Removed from favorites",
+		exportGenerated = "Export code generated!",
+		importSuccess = "✓ Imported successfully!",
+		importFailed = "✗ Invalid code!",
+		pasteFirst = "Paste code first!",
+		nameUrlRequired = "Name and URL required!",
+		themeChanged = "Theme: %s",
+		keybindSet = "Keybind set to %s",
+		settingsReset = "Settings reset!",
+		pressAnyKey = "Press any key...",
+		credit = "Credits"
+	},
+	French = {
+		title = "HMD HUB ULTIME",
+		all = "Tous",
+		favorites = "★",
+		recent = "Récent",
+		addScript = "+ Ajouter",
+		stats = "Stats",
+		import = "Importer",
+		export = "Exporter",
+		help = "Aide",
+		settings = "⚙",
+		grid = "Grille",
+		list = "Liste",
+		search = "Rechercher des scripts...",
+		addScriptTitle = "=== AJOUTER SCRIPT ===",
+		name = "Nom:",
+		url = "URL:",
+		category = "Catégorie:",
+		addButton = "AJOUTER SCRIPT",
+		statsTitle = "=== STATISTIQUES ===",
+		scripts = "Scripts:",
+		pinned = "Épinglés:",
+		executions = "Exécutions:",
+		game = "Jeu:",
+		exportTitle = "=== EXPORTER ===",
+		generateCode = "GÉNÉRER CODE",
+		importTitle = "=== IMPORTER ===",
+		importButton = "IMPORTER",
+		pasteCode = "Coller le code ici...",
+		helpTitle = "=== GUIDE D'AIDE ===",
+		settingsTitle = "=== PARAMÈTRES ===",
+		soundEffects = "Effets sonores",
+		safeMode = "Mode sécurisé",
+		compactMode = "Mode compact",
+		themeLabel = "THÈME:",
+		keybindLabel = "RACCOURCI:",
+		languageLabel = "LANGUE:",
+		current = "Actuel:",
+		changeKeybind = "Changer raccourci",
+		resetSettings = "RÉINITIALISER",
+		loaded = "HMD Hub Ultime chargé!",
+		scriptAdded = "✓ Script ajouté!",
+		scriptBlacklisted = "Script sur liste noire!",
+		safeModeBlocked = "Mode sécurisé - bloqué",
+		scriptLoaded = "✓ %s chargé!",
+		scriptFailed = "✗ Échec: %s",
+		addedToFavorites = "Ajouté aux favoris",
+		removedFromFavorites = "Retiré des favoris",
+		exportGenerated = "Code exporté généré!",
+		importSuccess = "✓ Importé avec succès!",
+		importFailed = "✗ Code invalide!",
+		pasteFirst = "Coller le code d'abord!",
+		nameUrlRequired = "Nom et URL requis!",
+		themeChanged = "Thème: %s",
+		keybindSet = "Raccourci défini sur %s",
+		settingsReset = "Paramètres réinitialisés!",
+		pressAnyKey = "Appuyez sur une touche...",
+		credit = "Crédits"
+	}
+}
+
+local function t(key)
+	local lang = translations[settings.language] or translations.English
+	return lang[key] or key
+end
+
+-- =====================
+-- SAVE/LOAD FUNCTIONS
+-- =====================
+local function saveSettings()
+	if writefile then
+		pcall(function()
+			writefile("HMD_Settings.json", HttpService:JSONEncode(settings))
+		end)
+	end
+end
+
+local function loadSettings()
+	if readfile and isfile and isfile("HMD_Settings.json") then
+		local success, data = pcall(function()
+			return HttpService:JSONDecode(readfile("HMD_Settings.json"))
+		end)
+		if success and data then
+			for k, v in pairs(data) do
+				settings[k] = v
+			end
+		end
+	end
+end
+
+local function saveScriptData()
+	if writefile then
+		pcall(function()
+			writefile("HMD_Scripts.json", HttpService:JSONEncode(scriptData))
+		end)
+	end
+end
+
+local function loadScriptData()
+	if readfile and isfile and isfile("") then
+		local success, data = pcall(function()
+			return HttpService:JSONDecode(readfile(""))
+		end)
+		if success and data then
+			scriptData = data
+			return
+		end
+	end
+	
+	-- Default scripts
+	scriptData = {
+		{name = "Emote GUI", url = "https://raw.githubusercontent.com/Gazer-Ha/Free-emote/refs/heads/main/Delta%20mad%20stuffs", category = "Animation"},
+		{name = "Night Hub", url = "https://raw.githubusercontent.com/Dev-NightMystic/Night-Mystic-/refs/heads/main/NightMystic", category = "Tools"},
+		{name = "Blox Fruit", url = "https://rawscripts.net/raw/Universal-Script-Blox-Fruit-Control-Update-78066", category = "Games"},
+		{name = "Mango Hub", url = "https://raw.githubusercontent.com/mangojuice52042-star/MangoJuice-Hub/refs/heads/main/MangoJuice%20Hub%20Update", category = "Games"},
+		{name = "Fly GUI", url = "https://raw.githubusercontent.com/HMD-94/HMD-Hub/refs/heads/main/HMD%20fly", category = "Tools"},
+		{name = "Admin Cmd", url = "https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source", category = "Tools"},
+		{name = "HMD Classic", url = "https://raw.githubusercontent.com/HMD-94/HMD-Hub/refs/heads/main/hmd%20script", category = "Games"},
+		{name = "Walkspeed", url = "https://raw.githubusercontent.com/MrScripterrFr/Speed-Changer/main/Speed%20Changer", category = "Tools"},
+		{name = "Walk Animation", url = "https://raw.githubusercontent.com/RubyBoo4life/Scripts/main/animations.vis", category = "Animation"},
+	}
+end
+
+loadSettings()
+loadScriptData()
+
+-- =====================
+-- THEMES
+-- =====================
+local themes = {
+	RGB = {primary = Color3.new(1,1,1), animated = true},
+	Dark = {primary = Color3.fromRGB(100,100,255), animated = false},
+	Red = {primary = Color3.fromRGB(255,50,50), animated = false},
+	Green = {primary = Color3.fromRGB(50,255,100), animated = false},
+	Purple = {primary = Color3.fromRGB(200,50,255), animated = false},
+	Ocean = {primary = Color3.fromRGB(50,150,255), animated = false}
+}
+
+-- =====================
+-- SOUND SYSTEM
+-- =====================
+local sounds = {
+	click = "rbxassetid://6895079853",
+	success = "rbxassetid://6895103163",
+	error = "rbxassetid://1464610652"
+}
+
+local function playSound(soundType)
+	if not settings.soundEnabled then return end
+	pcall(function()
+		local sound = Instance.new("Sound")
+		sound.SoundId = sounds[soundType] or sounds.click
+		sound.Volume = 0.3
+		sound.Parent = game.SoundService
+		sound:Play()
+		game:GetService("Debris"):AddItem(sound, 2)
+	end)
+end
+
+-- =====================
+-- MAIN GUI
+-- =====================
+local main = Instance.new("ScreenGui")
+main.Name = "HMD_MAIN"
+main.Parent = game.CoreGui
+main.ResetOnSpawn = false
+
+local frame = Instance.new("Frame")
+frame.Parent = main
+frame.BackgroundColor3 = Color3.fromRGB(10,10,10)
+frame.BorderSizePixel = 3
+frame.Position = settings.savedPosition or UDim2.new(0, 10, 0.25, 0)
+frame.Size = settings.savedSize or UDim2.new(0, 400, 0, 500)
+frame.Active = true
+frame.Draggable = true
+frame.ClipsDescendants = true
+
+-- UI Corner for main frame
+local frameCorner = Instance.new("UICorner")
+frameCorner.Parent = frame
+frameCorner.CornerRadius = UDim.new(0, 12)
+
+-- Title bar
+local titler = Instance.new("TextLabel")
+titler.Parent = frame
+titler.Size = UDim2.new(1, 0, 0, 40)
+titler.BackgroundColor3 = Color3.fromRGB(10,10,10)
+titler.BorderSizePixel = 3
+titler.Text = t("title")
+titler.Font = Enum.Font.SourceSansBold
+titler.TextSize = 24
+titler.TextColor3 = Color3.new(1,1,1)
+titler.ZIndex = 2
+
+-- UI Corner for title bar
+local titlerCorner = Instance.new("UICorner")
+titlerCorner.Parent = titler
+titlerCorner.CornerRadius = UDim.new(0, 12)
+
+-- Performance label
+local perfLabel = Instance.new("TextLabel")
+perfLabel.Parent = titler
+perfLabel.Size = UDim2.new(0, 120, 0, 15)
+perfLabel.Position = UDim2.new(0, 5, 1, -18)
+perfLabel.BackgroundTransparency = 1
+perfLabel.Text = "FPS: 60 | Ping: 0"
+perfLabel.Font = Enum.Font.SourceSans
+perfLabel.TextSize = 15
+perfLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
+perfLabel.TextXAlignment = Enum.TextXAlignment.Left
+perfLabel.ZIndex = 3
+
+task.spawn(function()
+	local frames = 0
+	RunService.RenderStepped:Connect(function() frames = frames + 1 end)
+	while true do
+		task.wait(1)
+		local fps = frames
+		frames = 0
+		local ping = math.floor(game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValue())
+		perfLabel.Text = string.format("FPS: %d | Ping: %dms", fps, ping)
+	end
+end)
+
+-- =====================
+-- NOTIFICATION SYSTEM
+-- =====================
+local notifFrame = Instance.new("Frame")
+notifFrame.Parent = main
+notifFrame.Position = UDim2.new(1, -230, 0, 10)
+notifFrame.Size = UDim2.new(0, 220, 0, 0)
+notifFrame.BackgroundTransparency = 1
+notifFrame.ZIndex = 100
+
+local function showNotification(message, isError)
+	local notif = Instance.new("Frame")
+	notif.Parent = notifFrame
+	notif.Size = UDim2.new(1, 0, 0, 50)
+	notif.BackgroundColor3 = isError and Color3.fromRGB(200,50,50) or Color3.fromRGB(50,200,100)
+	notif.BorderSizePixel = 2
+	notif.Position = UDim2.new(0, 0, 0, 0)
+	notif.ZIndex = 101
+	
+	-- UI Corner for notification
+	local notifCorner = Instance.new("UICorner")
+	notifCorner.Parent = notif
+	notifCorner.CornerRadius = UDim.new(0, 8)
+	
+	local label = Instance.new("TextLabel")
+	label.Parent = notif
+	label.Size = UDim2.new(1, -10, 1, 0)
+	label.Position = UDim2.new(0, 5, 0, 0)
+	label.BackgroundTransparency = 1
+	label.Text = message
+	label.Font = Enum.Font.SourceSans
+	label.TextSize = 13
+	label.TextColor3 = Color3.new(1,1,1)
+	label.TextWrapped = true
+	label.ZIndex = 102
+	
+	playSound(isError and "error" or "success")
+	
+	task.delay(3, function()
+		TweenService:Create(notif, TweenInfo.new(0.3), {BackgroundTransparency = 1}):Play()
+		TweenService:Create(label, TweenInfo.new(0.3), {TextTransparency = 1}):Play()
+		task.wait(0.3)
+		notif:Destroy()
+	end)
+end
+
+-- =====================
+-- BUTTON BAR
+-- =====================
+local buttonBar = Instance.new("ScrollingFrame")
+buttonBar.Parent = frame
+buttonBar.Position = UDim2.new(0, 0, 0, 40)
+buttonBar.Size = UDim2.new(1, 0, 0, 35)
+buttonBar.BackgroundColor3 = Color3.fromRGB(15,15,15)
+buttonBar.BorderSizePixel = 0
+buttonBar.ScrollBarThickness = 4
+buttonBar.CanvasSize = UDim2.new(0, 650, 0, 35)
+buttonBar.ScrollingDirection = Enum.ScrollingDirection.X
+buttonBar.ZIndex = 2
+
+-- UI Corner for button bar
+local buttonBarCorner = Instance.new("UICorner")
+buttonBarCorner.Parent = buttonBar
+buttonBarCorner.CornerRadius = UDim.new(0, 8)
+
+local function createTopBtn(text, pos, width)
+	local btn = Instance.new("TextButton")
+	btn.Parent = buttonBar
+	btn.Size = UDim2.new(0, width, 0, 28)
+	btn.Position = UDim2.new(0, pos, 0, 3)
+	btn.Text = text
+	btn.Font = Enum.Font.SourceSans
+	btn.TextSize = 13
+	btn.BackgroundColor3 = Color3.fromRGB(25,25,25)
+	btn.BorderSizePixel = 2
+	btn.TextColor3 = Color3.new(1,1,1)
+	btn.ZIndex = 3
+	
+	-- UI Corner for button
+	local btnCorner = Instance.new("UICorner")
+	btnCorner.Parent = btn
+	btnCorner.CornerRadius = UDim.new(0, 6)
+	
+	return btn
+end
+
+local x = 5
+local allBtn = createTopBtn(t("all"), x, 45); x = x + 50
+local favBtn = createTopBtn(t("favorites"), x, 35); x = x + 40
+local recentBtn = createTopBtn(t("recent"), x, 60); x = x + 65
+local statsBtn = createTopBtn(t("stats"), x, 55); x = x + 60
+local creditBtn = createTopBtn("Credit", x, 70); x = x + 75
+local exportBtn = createTopBtn(t("export"), x, 70); x = x + 75
+local helpBtn = createTopBtn(t("help"), x, 50); x = x + 55
+local settingsBtn = createTopBtn(t("settings"), x, 35); x = x + 40
+local viewBtn = createTopBtn(t("grid"), x, 50)
+
+-- =====================
+-- SEARCH BAR
+-- =====================
+local searchBar = Instance.new("TextBox")
+searchBar.Parent = frame
+searchBar.Position = UDim2.new(0, 10, 0, 80)
+searchBar.Size = UDim2.new(1, -20, 0, 30)
+searchBar.BackgroundColor3 = Color3.fromRGB(20,20,20)
+searchBar.BorderSizePixel = 2
+searchBar.Text = ""
+searchBar.PlaceholderText = t("search")
+searchBar.Font = Enum.Font.SourceSans
+searchBar.TextSize = 15
+searchBar.TextColor3 = Color3.new(1,1,1)
+searchBar.PlaceholderColor3 = Color3.fromRGB(150,150,150)
+searchBar.ClearTextOnFocus = false
+searchBar.ZIndex = 2
+
+-- UI Corner for search bar
+local searchBarCorner = Instance.new("UICorner")
+searchBarCorner.Parent = searchBar
+searchBarCorner.CornerRadius = UDim.new(0, 8)
+
+-- =====================
+-- SCROLL FRAME
+-- =====================
+local scrollFrame = Instance.new("ScrollingFrame")
+scrollFrame.Parent = frame
+scrollFrame.Position = UDim2.new(0, 0, 0, 115)
+scrollFrame.Size = UDim2.new(1, 0, 1, -115)
+scrollFrame.BackgroundTransparency = 1
+scrollFrame.BorderSizePixel = 0
+scrollFrame.ScrollBarThickness = 8
+scrollFrame.ScrollBarImageColor3 = Color3.fromRGB(255,255,255)
+scrollFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
+scrollFrame.Active = true
+scrollFrame.ZIndex = 2
+
+-- =====================
+-- PANELS
+-- =====================
+local function createPanel()
+	local panel = Instance.new("Frame")
+	panel.Parent = frame
+	panel.Position = UDim2.new(0, 0, 0, 115)
+	panel.Size = UDim2.new(1, 0, 1, -115)
+	panel.BackgroundColor3 = Color3.fromRGB(15,15,15)
+	panel.BorderSizePixel = 0
+	panel.Visible = false
+	panel.ZIndex = 5
+	
+	-- UI Corner for panel
+	local panelCorner = Instance.new("UICorner")
+	panelCorner.Parent = panel
+	panelCorner.CornerRadius = UDim.new(0, 8)
+	
+	local scroll = Instance.new("ScrollingFrame")
+	scroll.Parent = panel
+	scroll.Size = UDim2.new(1, 0, 1, 0)
+	scroll.BackgroundTransparency = 1
+	scroll.ScrollBarThickness = 8
+	scroll.CanvasSize = UDim2.new(0, 0, 0, 600)
+	scroll.ZIndex = 5
+	
+	return panel, scroll
+end
+
+local statsPanel, statsScroll = createPanel()
+local creditPanel, creditScroll = createPanel()
+local exportPanel, exportScroll = createPanel()
+local helpPanel, helpScroll = createPanel()
+local settingsPanel, settingsScroll = createPanel()
+
+-- =====================
+-- COLLAPSE BUTTON
+-- =====================
+local collapseBtn = Instance.new("TextButton")
+collapseBtn.Parent = titler
+collapseBtn.Size = UDim2.new(0, 32, 0, 32)
+collapseBtn.Position = UDim2.new(1, -36, 0.5, -16)
+collapseBtn.Text = "—"
+collapseBtn.Font = Enum.Font.SourceSansBold
+collapseBtn.TextSize = 28
+collapseBtn.BackgroundTransparency = 1
+collapseBtn.TextColor3 = Color3.new(1,1,1)
+collapseBtn.ZIndex = 10
+
+-- UI Corner for collapse button
+local collapseBtnCorner = Instance.new("UICorner")
+collapseBtnCorner.Parent = collapseBtn
+collapseBtnCorner.CornerRadius = UDim.new(0, 6)
+
+local collapsed = false
+local miniSize = UDim2.new(0, 400, 0, 40)
+local lastSize = frame.Size
+
+collapseBtn.MouseButton1Click:Connect(function()
+	collapsed = not collapsed
+	playSound("click")
+	
+	if collapsed then
+		collapseBtn.Text = "+"
+		lastSize = frame.Size
+		
+		buttonBar.Visible = false
+		searchBar.Visible = false
+		scrollFrame.Visible = false
+		statsPanel.Visible = false
+		creditPanel.Visible = false
+		exportPanel.Visible = false
+		helpPanel.Visible = false
+		settingsPanel.Visible = false
+		
+		TweenService:Create(frame, TweenInfo.new(0.25), {Size = miniSize}):Play()
+	else
+		collapseBtn.Text = "—"
+		
+		buttonBar.Visible = true
+		searchBar.Visible = true
+		scrollFrame.Visible = true
+		
+		frame.Size = lastSize
+	end
+end)
+
+-- =====================
+-- RESIZE BUTTON
+-- =====================
+local resizeBtn = Instance.new("TextButton")
+resizeBtn.Parent = frame
+resizeBtn.Size = UDim2.new(0, 32, 0, 32)
+resizeBtn.Position = UDim2.new(1, -36, 1, -36)
+resizeBtn.Text = "↕"
+resizeBtn.Font = Enum.Font.SourceSansBold
+resizeBtn.TextSize = 20
+resizeBtn.BackgroundColor3 = Color3.fromRGB(15,15,15)
+resizeBtn.BorderSizePixel = 2
+resizeBtn.TextColor3 = Color3.new(1,1,1)
+resizeBtn.ZIndex = 10
+
+-- UI Corner for resize button
+local resizeBtnCorner = Instance.new("UICorner")
+resizeBtnCorner.Parent = resizeBtn
+resizeBtnCorner.CornerRadius = UDim.new(0, 6)
+
+local resizing = false
+
+local function setupResize(input)
+	if collapsed then
+		collapsed = false
+		collapseBtn.Text = "—"
+		buttonBar.Visible = true
+		searchBar.Visible = true
+		scrollFrame.Visible = true
+		frame.Size = lastSize
+	end
+	
+	resizing = true
+	frame.Draggable = false
+	local startSize = frame.Size
+	local startPos = input.Position
+	
+	local moveConn = UserInputService.InputChanged:Connect(function(inp)
+		if resizing and (inp.UserInputType == Enum.UserInputType.MouseMovement or inp.UserInputType == Enum.UserInputType.Touch) then
+			local delta = inp.Position - startPos
+			local newX = math.clamp(startSize.X.Offset + delta.X, 350, 900)
+			local newY = math.clamp(startSize.Y.Offset + delta.Y, 300, 700)
+			frame.Size = UDim2.new(0, newX, 0, newY)
+		end
+	end)
+	
+	local endConn
+	endConn = UserInputService.InputEnded:Connect(function(inp)
+		if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
+			resizing = false
+			frame.Draggable = true
+			settings.savedSize = frame.Size
+			saveSettings()
+			moveConn:Disconnect()
+			endConn:Disconnect()
+		end
+	end)
+end
+
+resizeBtn.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+		setupResize(input)
+	end
+end)
+
+-- =====================
+-- SCRIPT BUTTONS
+-- =====================
+local function addToHistory(name)
+	if not settings.executionHistory[name] then
+		settings.executionHistory[name] = {}
+	end
+	table.insert(settings.executionHistory[name], os.time())
+	saveSettings()
+end
+
+local function createScriptBtn(data)
+	local btn = Instance.new("TextButton")
+	btn.Text = data.name
+	btn.BackgroundColor3 = Color3.fromRGB(15,15,15)
+	btn.BorderSizePixel = 3
+	btn.Font = Enum.Font.SourceSans
+	btn.TextWrapped = true
+	btn.TextColor3 = Color3.new(1,1,1)
+	btn.ZIndex = 3
+	
+	-- UI Corner for script button
+	local btnCorner = Instance.new("UICorner")
+	btnCorner.Parent = btn
+	btnCorner.CornerRadius = UDim.new(0, 8)
+	
+	local isFav = table.find(settings.favorites, data.name) ~= nil
+	local isPin = table.find(settings.pinned, data.name) ~= nil
+	
+	local pin = Instance.new("TextLabel")
+	pin.Parent = btn
+	pin.Size = UDim2.new(0, 18, 0, 18)
+	pin.Position = UDim2.new(0, 2, 0, 2)
+	pin.BackgroundTransparency = 1
+	pin.Text = isPin and "📌" or ""
+	pin.TextSize = 12
+	pin.ZIndex = 5
+	
+	local star = Instance.new("TextLabel")
+	star.Parent = btn
+	star.Size = UDim2.new(0, 20, 0, 20)
+	star.Position = UDim2.new(1, -22, 0, 2)
+	star.BackgroundTransparency = 1
+	star.Text = isFav and "★" or "☆"
+	star.TextSize = 16
+	star.TextColor3 = Color3.fromRGB(255, 215, 0)
+	star.ZIndex = 5
+	
+	local rating = settings.ratings[data.name] or 0
+	local ratingLbl = Instance.new("TextLabel")
+	ratingLbl.Parent = btn
+	ratingLbl.Size = UDim2.new(0, 50, 0, 12)
+	ratingLbl.Position = UDim2.new(0, 3, 1, -14)
+	ratingLbl.BackgroundTransparency = 1
+	ratingLbl.Text = string.rep("⭐", rating)
+	ratingLbl.TextSize = 9
+	ratingLbl.TextXAlignment = Enum.TextXAlignment.Left
+	ratingLbl.ZIndex = 5
+	
+	local execCount = settings.executionHistory[data.name] and #settings.executionHistory[data.name] or 0
+	local countLbl = Instance.new("TextLabel")
+	countLbl.Parent = btn
+	countLbl.Size = UDim2.new(0, 35, 0, 12)
+	countLbl.Position = UDim2.new(1, -38, 1, -14)
+	countLbl.BackgroundTransparency = 1
+	countLbl.Text = "×" .. execCount
+	countLbl.TextSize = 10
+	countLbl.TextColor3 = Color3.fromRGB(150, 150, 150)
+	countLbl.TextXAlignment = Enum.TextXAlignment.Right
+	countLbl.ZIndex = 5
+	
+	btn.MouseButton1Click:Connect(function()
+		if table.find(settings.blacklist, data.name) then
+			showNotification(t("scriptBlacklisted"), true)
+			return
+		end
+		
+		if settings.safeMode then
+			showNotification(t("safeModeBlocked"), true)
+			return
+		end
+		
+		playSound("click")
+		
+		local success, err = pcall(function()
+			loadstring(game:HttpGet(data.url))()
+		end)
+		
+		if success then
+			showNotification(string.format(t("scriptLoaded"), data.name), false)
+			
+			table.insert(settings.recentlyUsed, 1, data.name)
+			if #settings.recentlyUsed > 10 then
+				table.remove(settings.recentlyUsed, 11)
+			end
+			
+			addToHistory(data.name)
+			saveSettings()
+		else
+			showNotification(string.format(t("scriptFailed"), data.name), true)
+		end
+	end)
+	
+	local holding = false
+	local holdTime = 0
+	
+	btn.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton2 then
+			holding = true
+			holdTime = 0
+			
+			task.spawn(function()
+				while holding do
+					task.wait(0.1)
+					holdTime = holdTime + 0.1
+					
+					if holdTime >= 0.5 then
+						holding = false
+						
+						local idx = table.find(settings.favorites, data.name)
+						if idx then
+							table.remove(settings.favorites, idx)
+							star.Text = "☆"
+							showNotification(t("removedFromFavorites"), false)
+						else
+							table.insert(settings.favorites, data.name)
+							star.Text = "★"
+							showNotification(t("addedToFavorites"), false)
+						end
+						saveSettings()
+						break
+					end
+				end
+			end)
+		end
+	end)
+	
+	btn.InputEnded:Connect(function(input)
+		holding = false
+	end)
+	
+	return btn, data
+end
+
+for i, data in ipairs(scriptData) do
+	local btn = createScriptBtn(data)
+	btn.Parent = scrollFrame
+	table.insert(buttons, {button = btn, data = data})
+end
+
+-- =====================
+-- STATS PANEL
+-- =====================
+local statsTitle = Instance.new("TextLabel")
+statsTitle.Parent = statsScroll
+statsTitle.Size = UDim2.new(1, 0, 0, 30)
+statsTitle.BackgroundTransparency = 1
+statsTitle.Text = t("statsTitle")
+statsTitle.TextColor3 = Color3.new(1, 1, 1)
+statsTitle.Font = Enum.Font.SourceSansBold
+statsTitle.TextSize = 18
+statsTitle.ZIndex = 6
+
+local statsTxt = Instance.new("TextLabel")
+statsTxt.Parent = statsScroll
+statsTxt.Size = UDim2.new(1, -20, 0, 250)
+statsTxt.Position = UDim2.new(0, 10, 0, 35)
+statsTxt.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+statsTxt.BorderSizePixel = 2
+statsTxt.Text = "Loading..."
+statsTxt.TextColor3 = Color3.new(1, 1, 1)
+statsTxt.Font = Enum.Font.Code
+statsTxt.TextSize = 20
+statsTxt.TextXAlignment = Enum.TextXAlignment.Left
+statsTxt.TextYAlignment = Enum.TextYAlignment.Top
+statsTxt.TextWrapped = true
+statsTxt.ZIndex = 6
+
+-- UI Corner for stats text
+local statsTxtCorner = Instance.new("UICorner")
+statsTxtCorner.Parent = statsTxt
+statsTxtCorner.CornerRadius = UDim.new(0, 8)
+
+task.spawn(function()
+	while true do
+		if statsPanel.Visible then
+			local totalExec = 0
+			for _, count in pairs(settings.executionHistory) do
+				totalExec = totalExec + #count
+			end
+			
+			statsTxt.Text = string.format([[
+%s %d
+Favorites: %d
+Recent: %d
+%s %d
+%s %d
+
+%s %s
+			]], t("scripts"), #scriptData, #settings.favorites, #settings.recentlyUsed, t("executions"), totalExec, t("pinned"), #settings.pinned,
+			t("game"), game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId).Name or "Unknown")
+		end
+		task.wait(2)
+	end
+end)
+
+-- =====================
+-- EXPORT PANEL
+-- =====================
+local exportTitle = Instance.new("TextLabel")
+exportTitle.Parent = exportScroll
+exportTitle.Size = UDim2.new(1, 0, 0, 30)
+exportTitle.BackgroundTransparency = 1
+exportTitle.Text = t("exportTitle")
+exportTitle.TextColor3 = Color3.new(1, 1, 1)
+exportTitle.Font = Enum.Font.SourceSansBold
+exportTitle.TextSize = 18
+exportTitle.ZIndex = 6
+
+local exportBox = Instance.new("TextBox")
+exportBox.Parent = exportScroll
+exportBox.Size = UDim2.new(1, -20, 0, 250)
+exportBox.Position = UDim2.new(0, 10, 0, 35)
+exportBox.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+exportBox.BorderSizePixel = 2
+exportBox.Text = ""
+exportBox.TextColor3 = Color3.new(1, 1, 1)
+exportBox.Font = Enum.Font.Code
+exportBox.TextSize = 11
+exportBox.TextXAlignment = Enum.TextXAlignment.Left
+exportBox.TextYAlignment = Enum.TextYAlignment.Top
+exportBox.TextWrapped = true
+exportBox.MultiLine = true
+exportBox.ClearTextOnFocus = false
+exportBox.ZIndex = 6
+
+-- UI Corner for export box
+local exportBoxCorner = Instance.new("UICorner")
+exportBoxCorner.Parent = exportBox
+exportBoxCorner.CornerRadius = UDim.new(0, 8)
+
+local exportBtnGen = Instance.new("TextButton")
+exportBtnGen.Parent = exportScroll
+exportBtnGen.Size = UDim2.new(0, 160, 0, 32)
+exportBtnGen.Position = UDim2.new(0.5, -80, 0, 295)
+exportBtnGen.Text = t("generateCode")
+exportBtnGen.BackgroundColor3 = Color3.fromRGB(50, 100, 200)
+exportBtnGen.TextColor3 = Color3.new(1, 1, 1)
+exportBtnGen.Font = Enum.Font.SourceSansBold
+exportBtnGen.TextSize = 13
+exportBtnGen.ZIndex = 6
+
+-- UI Corner for export button
+local exportBtnGenCorner = Instance.new("UICorner")
+exportBtnGenCorner.Parent = exportBtnGen
+exportBtnGenCorner.CornerRadius = UDim.new(0, 8)
+
+exportBtnGen.MouseButton1Click:Connect(function()
+	local exportData = {scripts = scriptData, settings = settings}
+	local encoded = HttpService:JSONEncode(exportData)
+	local compressed = HttpService:Base64Encode(encoded)
+	exportBox.Text = compressed
+	showNotification(t("exportGenerated"), false)
+	playSound("success")
+end)
+
+-- =====================
+-- CREDIT PANEL
+-- =====================
+local creditTitle = Instance.new("TextLabel")
+creditTitle.Parent = creditScroll
+creditTitle.Size = UDim2.new(1, 0, 0, 30)
+creditTitle.BackgroundTransparency = 1
+creditTitle.Text = "=== CREDITS ==="
+creditTitle.TextColor3 = Color3.new(1, 1, 1)
+creditTitle.Font = Enum.Font.SourceSansBold
+creditTitle.TextSize = 24
+creditTitle.ZIndex = 6
+
+local creditBox = Instance.new("TextLabel")
+creditBox.Parent = creditScroll
+creditBox.Size = UDim2.new(1, -20, 0, 250)
+creditBox.Position = UDim2.new(0, 10, 0, 35)
+creditBox.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+creditBox.BorderSizePixel = 2
+creditBox.Text = "🎮 HMD & ZXR HUB 🎮\n\n👥 Créateurs:\n• Tiktok: @hmd_9414\n• Tiktok: @zxr_944\n\n✨ Features:\n• Scripts Premium\n• UI Moderne\n• Performance Optimisée\n\n🚀 Version: Ultimate Edition\n⚡ Powered by HMD Scripts"
+creditBox.TextColor3 = Color3.new(1, 1, 1)
+creditBox.Font = Enum.Font.SourceSansBold
+creditBox.TextSize = 18
+creditBox.TextWrapped = true
+creditBox.TextXAlignment = Enum.TextXAlignment.Center
+creditBox.TextYAlignment = Enum.TextYAlignment.Top
+creditBox.ZIndex = 6
+
+-- UI Corner for credit box
+local creditBoxCorner = Instance.new("UICorner")
+creditBoxCorner.Parent = creditBox
+creditBoxCorner.CornerRadius = UDim.new(0, 8)
+
+-- =====================
+-- HELP PANEL
+-- =====================
+local helpTitle = Instance.new("TextLabel")
+helpTitle.Parent = helpScroll
+helpTitle.Size = UDim2.new(1, 0, 0, 30)
+helpTitle.BackgroundTransparency = 1
+helpTitle.Text = t("helpTitle")
+helpTitle.TextColor3 = Color3.new(1, 1, 1)
+helpTitle.Font = Enum.Font.SourceSansBold
+helpTitle.TextSize = 18
+helpTitle.ZIndex = 6
+
+local helpText = Instance.new("TextLabel")
+helpText.Parent = helpScroll
+helpText.Size = UDim2.new(1, -20, 0, 1400)
+helpText.Position = UDim2.new(0, 10, 0, 35)
+helpText.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+helpText.BorderSizePixel = 2
+helpText.TextColor3 = Color3.new(1, 1, 1)
+helpText.Font = Enum.Font.SourceSans
+helpText.TextSize = 20
+helpText.TextXAlignment = Enum.TextXAlignment.Left
+helpText.TextYAlignment = Enum.TextYAlignment.Top
+helpText.TextWrapped = true
+helpText.ZIndex = 6
+
+-- UI Corner for help text
+local helpTextCorner = Instance.new("UICorner")
+helpTextCorner.Parent = helpText
+helpTextCorner.CornerRadius = UDim.new(0, 8)
+
+if settings.language == "French" then
+	helpText.Text = [[
+=== CONTRÔLES DE BASE ===
+
+PC:
+• Clic gauche: Exécuter script
+• Clic droit: Ajouter aux favoris
+• Glisser barre titre: Déplacer fenêtre
+• Glisser bouton ↕: Redimensionner
+• Molette souris: Défiler
+• Clavier: Ctrl Droit pour basculer GUI
+
+MOBILE:
+• Appuyer: Exécuter script
+• Maintenir 0.5s: Ajouter aux favoris
+• Glisser barre titre: Déplacer
+• Glisser bouton ↕: Redimensionner
+• Balayer: Défiler
+• Pas de clavier nécessaire!
+
+=== ICÔNES BOUTONS ===
+
+★ (Or) = Script favoris
+☆ (Vide) = Pas favoris
+📌 = Épinglé en haut
+⭐ = Notation (1-5 étoiles)
+×# = Fois exécuté
+
+=== BOUTONS MENU ===
+
+Tous - Tous les scripts
+★ - Favoris uniquement
+Récent - Récemment utilisés
++ Ajouter - Nouveau script
+Stats - Voir statistiques
+Importer - Importer liste
+Exporter - Exporter liste
+Aide - Ce guide
+⚙ - Paramètres
+Grille/Liste - Changer vue
+
+=== FONCTIONNALITÉS ===
+
+FAVORIS:
+PC: Clic droit sur script
+Mobile: Maintenir 0.5s
+Voir: Cliquer bouton ★
+
+RECHERCHE:
+Taper dans barre de recherche
+Fonctionne sur noms de scripts
+
+AJOUTER SCRIPT:
+1. Cliquer "+ Ajouter"
+2. Entrer Nom et URL (requis)
+3. Entrer Catégorie (optionnel)
+4. Cliquer "AJOUTER SCRIPT"
+
+IMPORTER/EXPORTER:
+Exporter: Cliquer Exporter > Générer
+Importer: Cliquer Importer > Coller > Importer
+Partagez vos listes avec amis!
+
+PARAMÈTRES:
+• Effets sonores - Activer/désactiver
+• Mode sécurisé - Bloquer exécutions
+• Mode compact - Boutons plus petits
+• Thèmes - 6 thèmes disponibles
+• Raccourci - Changer touche
+• Langue - Français/Anglais
+• Réinitialiser - Tout réinitialiser
+
+MODES VUE:
+Grille - 2-3 colonnes de boutons
+Liste - Colonne unique
+Compact - Boutons plus petits
+
+=== ASTUCES ===
+
+1. Utilisez favoris pour accès rapide
+2. Épinglez scripts fréquents
+3. Recherche pour trouver rapidement
+4. Exportez pour sauvegarder
+5. Mode compact pour petits écrans
+6. Mode sécurisé contre accidents
+7. Vue grille pour plus à l'écran
+8. Vue liste pour noms complets
+
+Profitez de vos scripts! 🚀
+	]]
+else
+	helpText.Text = [[
+=== BASIC CONTROLS ===
+
+PC:
+• Left-click: Execute script
+• Right-click: Add to favorites
+• Drag title bar: Move window
+• Drag ↕ button: Resize window
+• Mouse wheel: Scroll
+• Keyboard: Press Right Control to toggle GUI
+
+MOBILE:
+• Tap: Execute script
+• Hold 0.5 sec: Add to favorites
+• Drag title bar: Move window
+• Drag ↕ button: Resize window
+• Swipe: Scroll
+• No keyboard needed!
+
+=== BUTTON ICONS ===
+
+★ (Gold) = Favorited script
+☆ (Empty) = Not favorited
+📌 = Pinned to top
+⭐ = Rating (1-5 stars)
+×# = Times executed
+
+=== TOP MENU BUTTONS ===
+
+All - Show all scripts
+★ - Show only favorites
+Recent - Show recently used
++ Add - Add new script
+Stats - View statistics
+Import - Import script list
+Export - Export script list
+Help - This help guide
+⚙ - Settings panel
+Grid/List - Toggle view mode
+
+=== FEATURES ===
+
+FAVORITES:
+PC: Right-click any script
+Mobile: Hold script for 0.5 sec
+View: Click ★ button
+
+SEARCH:
+Type in search bar to filter scripts
+Works on script names
+
+ADD SCRIPT:
+1. Click "+ Add" button
+2. Enter Name and URL (required)
+3. Enter Category (optional)
+4. Click "ADD SCRIPT"
+
+IMPORT/EXPORT:
+Export: Click Export > Generate Code
+Import: Click Import > Paste code > Import
+Share your script lists with friends!
+
+SETTINGS:
+• Sound Effects - Toggle sounds
+• Safe Mode - Block all executions
+• Compact Mode - Smaller buttons
+• Themes - 6 color themes available
+• Keybind - Change toggle key
+• Language - English/French
+• Reset - Reset all settings
+
+VIEW MODES:
+Grid - 2-3 columns of buttons
+List - Single column list
+Compact - Smaller button size
+
+=== TIPS & TRICKS ===
+
+1. Use favorites for quick access
+2. Pin frequently used scripts
+3. Use search to find scripts fast
+4. Export to backup your list
+5. Compact mode for small screens
+6. Safe mode to prevent accidents
+7. Grid view fits more on screen
+8. List view shows full names
+
+Enjoy your scripts! 🚀
+	]]
+end
+
+helpScroll.CanvasSize = UDim2.new(0, 0, 0, 1450)
+
+-- =====================
+-- SETTINGS PANEL
+-- =====================
+local setTitle = Instance.new("TextLabel")
+setTitle.Parent = settingsScroll
+setTitle.Size = UDim2.new(1, 0, 0, 30)
+setTitle.BackgroundTransparency = 1
+setTitle.Text = t("settingsTitle")
+setTitle.TextColor3 = Color3.new(1, 1, 1)
+setTitle.Font = Enum.Font.SourceSansBold
+setTitle.TextSize = 18
+setTitle.ZIndex = 6
+
+local sY = 35
+
+local function createToggle(label, key, yPos)
+	local lbl = Instance.new("TextLabel")
+	lbl.Parent = settingsScroll
+	lbl.Size = UDim2.new(0.65, 0, 0, 28)
+	lbl.Position = UDim2.new(0, 10, 0, yPos)
+	lbl.BackgroundTransparency = 1
+	lbl.Text = label
+	lbl.TextColor3 = Color3.new(1, 1, 1)
+	lbl.Font = Enum.Font.SourceSans
+	lbl.TextSize = 13
+	lbl.TextXAlignment = Enum.TextXAlignment.Left
+	lbl.ZIndex = 6
+	
+	local toggle = Instance.new("TextButton")
+	toggle.Parent = settingsScroll
+	toggle.Size = UDim2.new(0, 55, 0, 24)
+	toggle.Position = UDim2.new(0.7, 0, 0, yPos + 2)
+	toggle.Text = settings[key] and "ON" or "OFF"
+	toggle.BackgroundColor3 = settings[key] and Color3.fromRGB(50, 200, 50) or Color3.fromRGB(150, 50, 50)
+	toggle.TextColor3 = Color3.new(1, 1, 1)
+	toggle.Font = Enum.Font.SourceSansBold
+	toggle.TextSize = 12
+	toggle.ZIndex = 6
+	
+	-- UI Corner for toggle
+	local toggleCorner = Instance.new("UICorner")
+	toggleCorner.Parent = toggle
+	toggleCorner.CornerRadius = UDim.new(0, 6)
+	
+	toggle.MouseButton1Click:Connect(function()
+		settings[key] = not settings[key]
+		toggle.Text = settings[key] and "ON" or "OFF"
+		toggle.BackgroundColor3 = settings[key] and Color3.fromRGB(50, 200, 50) or Color3.fromRGB(150, 50, 50)
+		saveSettings()
+		playSound("click")
+	end)
+	
+	return yPos + 32
+end
+
+sY = createToggle(t("soundEffects"), "soundEnabled", sY)
+sY = createToggle(t("safeMode"), "safeMode", sY)
+sY = createToggle(t("compactMode"), "compactMode", sY)
+
+sY = sY + 10
+
+-- Theme buttons
+local themeLbl = Instance.new("TextLabel")
+themeLbl.Parent = settingsScroll
+themeLbl.Size = UDim2.new(1, -20, 0, 22)
+themeLbl.Position = UDim2.new(0, 10, 0, sY)
+themeLbl.BackgroundTransparency = 1
+themeLbl.Text = t("themeLabel")
+themeLbl.TextColor3 = Color3.new(1, 1, 1)
+themeLbl.Font = Enum.Font.SourceSansBold
+themeLbl.TextSize = 15
+themeLbl.TextXAlignment = Enum.TextXAlignment.Left
+themeLbl.ZIndex = 6
+
+sY = sY + 26
+
+local tIdx = 0
+for themeName, _ in pairs(themes) do
+	local btn = Instance.new("TextButton")
+	btn.Parent = settingsScroll
+	btn.Size = UDim2.new(0, 80, 0, 28)
+	btn.Position = UDim2.new(0, 10 + (tIdx % 4) * 85, 0, sY + math.floor(tIdx / 4) * 32)
+	btn.Text = themeName
+	btn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+	btn.BorderSizePixel = 2
+	btn.TextColor3 = Color3.new(1, 1, 1)
+	btn.Font = Enum.Font.SourceSans
+	btn.TextSize = 12
+	btn.ZIndex = 6
+	
+	-- UI Corner for theme button
+	local btnCorner = Instance.new("UICorner")
+	btnCorner.Parent = btn
+	btnCorner.CornerRadius = UDim.new(0, 6)
+	
+	btn.MouseButton1Click:Connect(function()
+		settings.theme = themeName
+		saveSettings()
+		showNotification(string.format(t("themeChanged"), themeName), false)
+		playSound("click")
+	end)
+	
+	tIdx = tIdx + 1
+end
+
+sY = sY + math.ceil(tIdx / 4) * 32 + 20
+
+-- Language selector
+local langLbl = Instance.new("TextLabel")
+langLbl.Parent = settingsScroll
+langLbl.Size = UDim2.new(1, -20, 0, 22)
+langLbl.Position = UDim2.new(0, 10, 0, sY)
+langLbl.BackgroundTransparency = 1
+langLbl.Text = t("languageLabel")
+langLbl.TextColor3 = Color3.new(1, 1, 1)
+langLbl.Font = Enum.Font.SourceSansBold
+langLbl.TextSize = 15
+langLbl.TextXAlignment = Enum.TextXAlignment.Left
+langLbl.ZIndex = 6
+
+sY = sY + 26
+
+local function createLangBtn(lang, xPos)
+	local btn = Instance.new("TextButton")
+	btn.Parent = settingsScroll
+	btn.Size = UDim2.new(0, 80, 0, 28)
+	btn.Position = UDim2.new(0, xPos, 0, sY)
+	btn.Text = lang
+	btn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+	btn.BorderSizePixel = 2
+	btn.TextColor3 = Color3.new(1, 1, 1)
+	btn.Font = Enum.Font.SourceSans
+	btn.TextSize = 12
+	btn.ZIndex = 6
+	
+	-- UI Corner for language button
+	local btnCorner = Instance.new("UICorner")
+	btnCorner.Parent = btn
+	btnCorner.CornerRadius = UDim.new(0, 6)
+	
+	btn.MouseButton1Click:Connect(function()
+		settings.language = lang
+		saveSettings()
+		showNotification("Language: " .. lang, false)
+		playSound("click")
+	end)
+	
+	return btn
+end
+
+createLangBtn("English", 10)
+createLangBtn("French", 95)
+
+sY = sY + 40
+
+-- Keybind section
+local keybindLbl = Instance.new("TextLabel")
+keybindLbl.Parent = settingsScroll
+keybindLbl.Size = UDim2.new(1, -20, 0, 22)
+keybindLbl.Position = UDim2.new(0, 10, 0, sY)
+keybindLbl.BackgroundTransparency = 1
+keybindLbl.Text = t("keybindLabel")
+keybindLbl.TextColor3 = Color3.new(1, 1, 1)
+keybindLbl.Font = Enum.Font.SourceSansBold
+keybindLbl.TextSize = 15
+keybindLbl.TextXAlignment = Enum.TextXAlignment.Left
+keybindLbl.ZIndex = 6
+
+sY = sY + 26
+
+local currentKeyLbl = Instance.new("TextLabel")
+currentKeyLbl.Parent = settingsScroll
+currentKeyLbl.Size = UDim2.new(1, -20, 0, 25)
+currentKeyLbl.Position = UDim2.new(0, 10, 0, sY)
+currentKeyLbl.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+currentKeyLbl.BorderSizePixel = 2
+currentKeyLbl.Text = t("current") .. " " .. settings.toggleKey.Name
+currentKeyLbl.TextColor3 = Color3.new(1, 1, 1)
+currentKeyLbl.Font = Enum.Font.SourceSans
+currentKeyLbl.TextSize = 13
+currentKeyLbl.ZIndex = 6
+
+-- UI Corner for current key label
+local currentKeyLblCorner = Instance.new("UICorner")
+currentKeyLblCorner.Parent = currentKeyLbl
+currentKeyLblCorner.CornerRadius = UDim.new(0, 6)
+
+sY = sY + 30
+
+local changeKeyBtn = Instance.new("TextButton")
+changeKeyBtn.Parent = settingsScroll
+changeKeyBtn.Size = UDim2.new(0, 150, 0, 30)
+changeKeyBtn.Position = UDim2.new(0, 10, 0, sY)
+changeKeyBtn.Text = t("changeKeybind")
+changeKeyBtn.BackgroundColor3 = Color3.fromRGB(50, 100, 200)
+changeKeyBtn.BorderSizePixel = 2
+changeKeyBtn.TextColor3 = Color3.new(1, 1, 1)
+changeKeyBtn.Font = Enum.Font.SourceSans
+changeKeyBtn.TextSize = 13
+changeKeyBtn.ZIndex = 6
+
+-- UI Corner for change key button
+local changeKeyBtnCorner = Instance.new("UICorner")
+changeKeyBtnCorner.Parent = changeKeyBtn
+changeKeyBtnCorner.CornerRadius = UDim.new(0, 6)
+
+changeKeyBtn.MouseButton1Click:Connect(function()
+	changeKeyBtn.Text = t("pressAnyKey")
+	local connection
+	connection = UserInputService.InputBegan:Connect(function(input, processed)
+		if input.UserInputType == Enum.UserInputType.Keyboard then
+			settings.toggleKey = input.KeyCode
+			currentKeyLbl.Text = t("current") .. " " .. input.KeyCode.Name
+			changeKeyBtn.Text = t("changeKeybind")
+			saveSettings()
+			showNotification(string.format(t("keybindSet"), input.KeyCode.Name), false)
+			connection:Disconnect()
+		end
+	end)
+end)
+
+sY = sY + 40
+
+local resetBtn = Instance.new("TextButton")
+resetBtn.Parent = settingsScroll
+resetBtn.Size = UDim2.new(0, 160, 0, 35)
+resetBtn.Position = UDim2.new(0.5, -80, 0, sY)
+resetBtn.Text = t("resetSettings")
+resetBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+resetBtn.TextColor3 = Color3.new(1, 1, 1)
+resetBtn.Font = Enum.Font.SourceSansBold
+resetBtn.TextSize = 13
+resetBtn.ZIndex = 6
+
+-- UI Corner for reset button
+local resetBtnCorner = Instance.new("UICorner")
+resetBtnCorner.Parent = resetBtn
+resetBtnCorner.CornerRadius = UDim.new(0, 8)
+
+resetBtn.MouseButton1Click:Connect(function()
+	settings = {
+		theme = "RGB",
+		viewMode = "grid",
+		savedPosition = nil,
+		savedSize = nil,
+		favorites = {},
+		pinned = {},
+		recentlyUsed = {},
+		executionHistory = {},
+		ratings = {},
+		notes = {},
+		toggleKey = Enum.KeyCode.RightControl,
+		soundEnabled = true,
+		opacity = 1,
+		safeMode = false,
+		blacklist = {},
+		compactMode = false,
+		language = "English"
+	}
+	saveSettings()
+	currentKeyLbl.Text = t("current") .. " " .. settings.toggleKey.Name
+	showNotification(t("settingsReset"), false)
+	playSound("success")
+end)
+
+settingsScroll.CanvasSize = UDim2.new(0, 0, 0, sY + 50)
+
+-- =====================
+-- FILTER & LAYOUT
+-- =====================
+local function filterButtons(filter, search)
+	local visible = {}
+	search = search and search:lower() or ""
+	
+	for _, btnInfo in ipairs(buttons) do
+		local show = true
+		local data = btnInfo.data
+		
+		if filter == "favorites" then
+			show = table.find(settings.favorites, data.name) ~= nil
+		elseif filter == "recent" then
+			show = table.find(settings.recentlyUsed, data.name) ~= nil
+		end
+		
+		if show and search ~= "" then
+			show = data.name:lower():find(search) ~= nil
+		end
+		
+		btnInfo.button.Visible = show
+		if show then
+			table.insert(visible, btnInfo)
+		end
+	end
+	
+	table.sort(visible, function(a, b)
+		local aPin = table.find(settings.pinned, a.data.name) ~= nil
+		local bPin = table.find(settings.pinned, b.data.name) ~= nil
+		if aPin and not bPin then return true end
+		if not aPin and bPin then return false end
+		return false
+	end)
+	
+	return visible
+end
+
+local function updateLayout()
+	local visible = filterButtons(currentFilter, searchBar.Text)
+	local w = scrollFrame.AbsoluteSize.X
+	local pad = 12
+	local scrollW = 12
+	
+	if settings.viewMode == "grid" then
+		local cols = settings.compactMode and 3 or 2
+		local btnW = (w - scrollW - (cols + 1) * pad) / cols
+		local btnH = settings.compactMode and 40 or 52
+		local txtSize = settings.compactMode and 12 or 15
+		
+		for i, btnInfo in ipairs(visible) do
+			local col = (i - 1) % cols
+			local row = math.floor((i - 1) / cols)
+			btnInfo.button.Size = UDim2.new(0, btnW, 0, btnH)
+			btnInfo.button.Position = UDim2.new(0, pad + col * (btnW + pad), 0, pad + row * (btnH + pad))
+			btnInfo.button.TextSize = txtSize
+		end
+		
+		local rows = math.ceil(#visible / cols)
+		scrollFrame.CanvasSize = UDim2.new(0, 0, 0, pad + rows * (btnH + pad))
+	else
+		local btnW = w - scrollW - 20
+		local btnH = settings.compactMode and 32 or 38
+		local txtSize = settings.compactMode and 13 or 15
+		
+		for i, btnInfo in ipairs(visible) do
+			btnInfo.button.Size = UDim2.new(0, btnW, 0, btnH)
+			btnInfo.button.Position = UDim2.new(0, 10, 0, (i - 1) * (btnH + 5) + 5)
+			btnInfo.button.TextSize = txtSize
+		end
+		
+		scrollFrame.CanvasSize = UDim2.new(0, 0, 0, #visible * (btnH + 5) + 10)
+	end
+end
+
+-- =====================
+-- PANEL SWITCHING
+-- =====================
+local currentPanel = nil
+
+local function showPanel(panel)
+	if currentPanel then
+		currentPanel.Visible = false
+	end
+	
+	if panel then
+		panel.Visible = true
+		scrollFrame.Visible = false
+		currentPanel = panel
+	else
+		scrollFrame.Visible = true
+		currentPanel = nil
+	end
+end
+
+allBtn.MouseButton1Click:Connect(function()
+	currentFilter = "all"
+	showPanel(nil)
+	updateLayout()
+	playSound("click")
+end)
+
+favBtn.MouseButton1Click:Connect(function()
+	currentFilter = "favorites"
+	showPanel(nil)
+	updateLayout()
+	playSound("click")
+end)
+
+recentBtn.MouseButton1Click:Connect(function()
+	currentFilter = "recent"
+	showPanel(nil)
+	updateLayout()
+	playSound("click")
+end)
+
+statsBtn.MouseButton1Click:Connect(function()
+	showPanel(statsPanel)
+	playSound("click")
+end)
+
+creditBtn.MouseButton1Click:Connect(function()
+	showPanel(creditPanel)
+	playSound("click")
+end)
+
+exportBtn.MouseButton1Click:Connect(function()
+	showPanel(exportPanel)
+	playSound("click")
+end)
+
+helpBtn.MouseButton1Click:Connect(function()
+	showPanel(helpPanel)
+	playSound("click")
+end)
+
+settingsBtn.MouseButton1Click:Connect(function()
+	showPanel(settingsPanel)
+	playSound("click")
+end)
+
+viewBtn.MouseButton1Click:Connect(function()
+	if settings.viewMode == "grid" then
+		settings.viewMode = "list"
+		viewBtn.Text = t("list")
+	else
+		settings.viewMode = "grid"
+		viewBtn.Text = t("grid")
+	end
+	saveSettings()
+	updateLayout()
+	playSound("click")
+end)
+
+searchBar:GetPropertyChangedSignal("Text"):Connect(function()
+	updateLayout()
+end)
+
+-- =====================
+-- KEYBIND
+-- =====================
+UserInputService.InputBegan:Connect(function(input, processed)
+	if not processed and input.KeyCode == settings.toggleKey then
+		main.Enabled = not main.Enabled
+		playSound("click")
+	end
+end)
+
+-- =====================
+-- SAVE POSITION
+-- =====================
+frame:GetPropertyChangedSignal("Position"):Connect(function()
+	if not resizing and not collapsed then
+		task.wait(0.5)
+		settings.savedPosition = frame.Position
+		saveSettings()
+	end
+end)
+
+-- =====================
+-- THEME ENGINE
+-- =====================
+local hue = 0
+RunService.RenderStepped:Connect(function()
+	local theme = themes[settings.theme]
+	local color
+	
+	if theme.animated then
+		hue = (hue + 0.003) % 1
+		color = Color3.fromHSV(hue, 1, 1)
+	else
+		color = theme.primary
+	end
+	
+	frame.BorderColor3 = color
+	titler.BorderColor3 = color
+	titler.TextColor3 = color
+	collapseBtn.TextColor3 = color
+	resizeBtn.TextColor3 = color
+	resizeBtn.BorderColor3 = color
+	scrollFrame.ScrollBarImageColor3 = color
+	searchBar.BorderColor3 = color
+	
+	for _, btnInfo in ipairs(buttons) do
+		if btnInfo.button.Visible and not table.find(settings.blacklist, btnInfo.data.name) then
+			btnInfo.button.BorderColor3 = color
+		end
+	end
+	
+	updateLayout()
+end)
+
+-- =====================
+-- INITIALIZE
+-- =====================
+showNotification(t("loaded"), false)
+updateLayout()
+
+print("HMD Hub Ultimate Edition - Ready!")
+print("Scripts: " .. #scriptData)
+print("Press " .. settings.toggleKey.Name .. " to toggle GUI")
+print("Language: " .. settings.language)
