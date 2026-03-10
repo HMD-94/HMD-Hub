@@ -199,9 +199,9 @@ local function saveScriptData()
 end
 
 local function loadScriptData()
-	if readfile and isfile and isfile("HMD_Scripts.json") then
+	if readfile and isfile and isfile("") then
 		local success, data = pcall(function()
-			return HttpService:JSONDecode(readfile("HMD_Scripts.json"))
+			return HttpService:JSONDecode(readfile(""))
 		end)
 		if success and data then
 			scriptData = data
