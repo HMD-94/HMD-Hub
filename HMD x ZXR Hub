@@ -222,6 +222,7 @@ local function loadScriptData()
 		{name = "HMD Classic", url = "https://raw.githubusercontent.com/HMD-94/HMD-Hub/refs/heads/main/hmd%20script", category = "Games"},
 		{name = "Walkspeed", url = "https://raw.githubusercontent.com/MrScripterrFr/Speed-Changer/main/Speed%20Changer", category = "Tools"},
 		{name = "Walk Animation", url = "https://raw.githubusercontent.com/RubyBoo4life/Scripts/main/animations.vis", category = "Animation"},
+        {name = "aim bot bf", url = "https://raw.githubusercontent.com/onion132005-bit/test0.02/refs/heads/main/onion13v6.lua", category = "Tools"},
 	}
 end
 
