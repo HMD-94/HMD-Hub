@@ -1,0 +1,426 @@
+--// HMD HUB - EXOTIQUE SANS BUG JOYSTICK
+
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local GuiService = game:GetService("GuiService")
+
+local player = Players.LocalPlayer
+local savedPosition = nil
+local tpMarker = nil
+
+-- remove old gui
+if player.PlayerGui:FindFirstChild("HMD_EXOTIQUE") then
+	player.PlayerGui.HMD_EXOTIQUE:Destroy()
+end
+
+if game.CoreGui:FindFirstChild("F_Button_GUI") then
+	game.CoreGui.F_Button_GUI:Destroy()
+end
+
+-- MAIN GUI
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "HMD_EXOTIQUE"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.Parent = player.PlayerGui
+
+local Main = Instance.new("Frame", ScreenGui)
+Main.Size = UDim2.new(0,420,0,250)
+Main.Position = UDim2.new(0.5,-210,0.5,-125)
+Main.BackgroundColor3 = Color3.fromRGB(18,18,18)
+Main.Active = true
+Main.Draggable = true
+
+Instance.new("UICorner", Main).CornerRadius = UDim.new(0,16)
+
+local Stroke = Instance.new("UIStroke", Main)
+Stroke.Color = Color3.fromRGB(0,170,255)
+
+-- TOP BAR
+local Top = Instance.new("Frame", Main)
+Top.Size = UDim2.new(1,0,0,40)
+Top.BackgroundColor3 = Color3.fromRGB(25,25,25)
+
+Instance.new("UICorner", Top).CornerRadius = UDim.new(0,16)
+
+local Title = Instance.new("TextLabel", Top)
+Title.Size = UDim2.new(1,-80,1,0)
+Title.Position = UDim2.new(0,10,0,0)
+Title.BackgroundTransparency = 1
+Title.Text = "HMD HUB - EXOTIQUE"
+Title.Font = Enum.Font.GothamBold
+Title.TextColor3 = Color3.new(1,1,1)
+Title.TextScaled = true
+Title.TextXAlignment = Enum.TextXAlignment.Left
+
+-- minimize
+local MinBtn = Instance.new("TextButton", Top)
+MinBtn.Size = UDim2.new(0,30,0,30)
+MinBtn.Position = UDim2.new(1,-70,0.5,-15)
+MinBtn.Text = "-"
+MinBtn.BackgroundColor3 = Color3.fromRGB(40,40,40)
+MinBtn.TextColor3 = Color3.new(1,1,1)
+Instance.new("UICorner", MinBtn).CornerRadius = UDim.new(1,0)
+
+-- close
+local CloseBtn = Instance.new("TextButton", Top)
+CloseBtn.Size = UDim2.new(0,30,0,30)
+CloseBtn.Position = UDim2.new(1,-35,0.5,-15)
+CloseBtn.Text = "X"
+CloseBtn.BackgroundColor3 = Color3.fromRGB(170,0,0)
+CloseBtn.TextColor3 = Color3.new(1,1,1)
+Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(1,0)
+
+-- container
+local Container = Instance.new("Frame", Main)
+Container.Size = UDim2.new(1,-20,1,-60)
+Container.Position = UDim2.new(0,10,0,50)
+Container.BackgroundTransparency = 1
+
+local Layout = Instance.new("UIListLayout", Container)
+Layout.Padding = UDim.new(0,10)
+
+-- button creator
+local function createButton(text,callback)
+
+	local Btn = Instance.new("TextButton")
+	Btn.Size = UDim2.new(1,0,0,40)
+	Btn.Text = text
+	Btn.Font = Enum.Font.GothamBold
+	Btn.TextScaled = true
+	Btn.BackgroundColor3 = Color3.fromRGB(35,35,35)
+	Btn.TextColor3 = Color3.new(1,1,1)
+
+	Instance.new("UICorner", Btn).CornerRadius = UDim.new(0,12)
+
+	Btn.MouseButton1Click:Connect(callback)
+
+	Btn.Parent = Container
+
+end
+
+-- QUICK TP FUNCTION (DIRECT - PAS DE SIMULATION CLAVIER)
+local function quickTP()
+	if savedPosition then
+		local char = player.Character or player.CharacterAdded:Wait()
+		local root = char:WaitForChild("HumanoidRootPart")
+
+		local oldPos = root.CFrame
+
+		root.CFrame = savedPosition
+		task.wait(0.5)
+		root.CFrame = oldPos
+	end
+end
+
+-- SET TP
+createButton("SET TP", function()
+
+	local char = player.Character or player.CharacterAdded:Wait()
+	local root = char:WaitForChild("HumanoidRootPart")
+
+	savedPosition = root.CFrame
+
+	if not tpMarker then
+		tpMarker = Instance.new("Part")
+		tpMarker.Size = Vector3.new(4,4,4)
+		tpMarker.Anchored = true
+		tpMarker.CanCollide = false
+		tpMarker.Transparency = 0.5
+		tpMarker.Material = Enum.Material.Neon
+		tpMarker.Color = Color3.fromRGB(0,170,255)
+		tpMarker.Parent = workspace
+	end
+
+	tpMarker.CFrame = savedPosition
+
+end)
+
+-- TP BASE
+createButton("TP BASE", function()
+
+	if savedPosition then
+
+		local char = player.Character or player.CharacterAdded:Wait()
+		local root = char:WaitForChild("HumanoidRootPart")
+
+		root.CFrame = savedPosition
+
+	end
+
+end)
+
+-- QUICK TP BUTTON
+createButton("QUICK TP", quickTP)
+
+-- FLY BUTTON
+createButton("FLY / NOCLIP", function()
+
+	loadstring(game:HttpGet("https://raw.githubusercontent.com/HMD-94/HMD-Hub/refs/heads/main/HMD%20fly"))()
+
+end)
+
+-- F KEY HANDLER (PC SEULEMENT - PAS DE BUG MOBILE)
+UserInputService.InputBegan:Connect(function(input,gp)
+
+	if gp then return end
+
+	-- Détecter si on est sur mobile
+	local isMobileDevice = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
+	
+	-- Exécuter seulement sur PC
+	if not isMobileDevice and input.KeyCode == Enum.KeyCode.F then
+		quickTP()
+	end
+
+end)
+
+-- minimize
+local minimized = false
+local normalSize = UDim2.new(0,420,0,250)
+
+MinBtn.MouseButton1Click:Connect(function()
+
+	minimized = not minimized
+
+	if minimized then
+		Container.Visible = false
+		TweenService:Create(Main,TweenInfo.new(0.25),{Size = UDim2.new(0,420,0,45)}):Play()
+	else
+		TweenService:Create(Main,TweenInfo.new(0.25),{Size = normalSize}):Play()
+		task.wait(0.25)
+		Container.Visible = true
+	end
+
+end)
+
+CloseBtn.MouseButton1Click:Connect(function()
+	ScreenGui:Destroy()
+	-- Détruire aussi le bouton F
+	if game.CoreGui:FindFirstChild("F_Button_GUI") then
+		game.CoreGui.F_Button_GUI:Destroy()
+	end
+end)
+
+-- =====================
+-- BOUTON F DÉPLAÇABLE (SANS SIMULATION CLAVIER)
+-- =====================
+
+-- Créer le GUI pour le bouton F
+local FButtonGui = Instance.new("ScreenGui")
+FButtonGui.Name = "F_Button_GUI"
+FButtonGui.ResetOnSpawn = false
+FButtonGui.Parent = game.CoreGui
+FButtonGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+-- Créer le bouton F
+local FButton = Instance.new("TextButton")
+FButton.Name = "FButton"
+FButton.Parent = FButtonGui
+FButton.Size = UDim2.new(0, 60, 0, 60)
+FButton.Position = UDim2.new(0, 50, 0.5, -30) -- Position initiale à gauche
+FButton.Text = "F"
+FButton.Font = Enum.Font.GothamBold
+FButton.TextSize = 24
+FButton.TextColor3 = Color3.new(1, 1, 1)
+FButton.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
+FButton.BorderSizePixel = 0
+FButton.Active = true
+FButton.Draggable = false -- On va gérer le drag manuellement
+
+-- Coins arrondis
+local FButtonCorner = Instance.new("UICorner")
+FButtonCorner.Parent = FButton
+FButtonCorner.CornerRadius = UDim.new(0, 30) -- Bouton circulaire
+
+-- Effet de brillance
+local FButtonGradient = Instance.new("UIGradient")
+FButtonGradient.Parent = FButton
+FButtonGradient.Color = ColorSequence.new{
+	ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 200, 255)),
+	ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 140, 255))
+}
+FButtonGradient.Rotation = 45
+
+-- Système de drag amélioré (sans bug joystick)
+local isDragging = false
+local dragStart = nil
+local startPos = nil
+
+-- Variables pour détecter clic vs drag
+local dragThreshold = 10 -- Seuil de déplacement pour considérer comme drag
+local hasDragged = false
+
+FButton.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+		isDragging = true
+		dragStart = input.Position
+		startPos = FButton.Position
+		hasDragged = false
+	end
+end)
+
+FButton.InputChanged:Connect(function(input)
+	if isDragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+		local delta = input.Position - dragStart
+		local distance = delta.Magnitude
+		
+		if distance > dragThreshold then
+			hasDragged = true
+			local newPos = UDim2.new(
+				startPos.X.Scale,
+				startPos.X.Offset + delta.X,
+				startPos.Y.Scale,
+				startPos.Y.Offset + delta.Y
+			)
+			FButton.Position = newPos
+		end
+	end
+end)
+
+FButton.InputEnded:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+		isDragging = false
+		
+		-- Si c'était un clic (pas un drag), exécuter QUICK TP DIRECTEMENT
+		if not hasDragged then
+			-- EXÉCUTION DIRECTE - PAS DE SIMULATION CLAVIER!
+			quickTP()
+			
+			-- Effet visuel
+			FButton.BackgroundColor3 = Color3.fromRGB(0, 255, 100)
+			task.wait(0.2)
+			FButton.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
+		end
+	end
+end)
+
+-- Animation subtile du bouton
+local time = 0
+RunService.Heartbeat:Connect(function(delta)
+	time = time + delta
+	
+	-- Pulse subtile
+	local pulse = math.sin(time * 3) * 0.05 + 1
+	FButton.Size = UDim2.new(0, 60 * pulse, 0, 60 * pulse)
+end)
+
+-- S'assurer que le bouton reste au-dessus
+FButtonGui.DisplayOrder = 999
+
+-- =====================
+-- QUIT BUTTON (amélioré)
+-- =====================
+
+local QuitGui = Instance.new("ScreenGui")
+QuitGui.Name = "Quit_GUI"
+QuitGui.ResetOnSpawn = false
+QuitGui.Parent = game.CoreGui
+
+local QuitButton = Instance.new("TextButton")
+QuitButton.Name = "QuitButton"
+QuitButton.Parent = QuitGui
+QuitButton.Size = UDim2.new(0, 100, 0, 40)
+QuitButton.Position = UDim2.new(1, -110, 0, 10) -- En haut à droite
+QuitButton.Text = "QUIT"
+QuitButton.Font = Enum.Font.GothamBold
+QuitButton.TextSize = 16
+QuitButton.TextColor3 = Color3.new(1,1,1)
+QuitButton.BackgroundColor3 = Color3.fromRGB(200,50,50)
+QuitButton.BorderSizePixel = 0
+QuitButton.Active = true
+QuitButton.Draggable = false
+
+-- Coins arrondis
+local QuitButtonCorner = Instance.new("UICorner")
+QuitButtonCorner.Parent = QuitButton
+QuitButtonCorner.CornerRadius = UDim.new(0, 8)
+
+-- Système de drag pour le bouton QUIT (même logique que F)
+local isDraggingQuit = false
+local dragStartQuit = nil
+local startPosQuit = nil
+local hasDraggedQuit = false
+
+QuitButton.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+		isDraggingQuit = true
+		dragStartQuit = input.Position
+		startPosQuit = QuitButton.Position
+		hasDraggedQuit = false
+	end
+end)
+
+QuitButton.InputChanged:Connect(function(input)
+	if isDraggingQuit and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+		local delta = input.Position - dragStartQuit
+		local distance = delta.Magnitude
+		
+		if distance > dragThreshold then
+			hasDraggedQuit = true
+			local newPos = UDim2.new(
+				startPosQuit.X.Scale,
+				startPosQuit.X.Offset + delta.X,
+				startPosQuit.Y.Scale,
+				startPosQuit.Y.Offset + delta.Y
+			)
+			QuitButton.Position = newPos
+		end
+	end
+end)
+
+QuitButton.InputEnded:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+		isDraggingQuit = false
+		
+		if not hasDraggedQuit then
+			-- Clic simple = quitter
+			game:Shutdown()
+		end
+	end
+end)
+
+-- Notification de chargement
+local function showNotification(text)
+	local notifGui = Instance.new("ScreenGui")
+	notifGui.Parent = game.CoreGui
+	notifGui.Name = "Notification_" .. tick()
+	notifGui.DisplayOrder = 1000
+	
+	local notif = Instance.new("Frame")
+	notif.Parent = notifGui
+	notif.Size = UDim2.new(0, 300, 0, 60)
+	notif.Position = UDim2.new(0.5, -150, 0, -100)
+	notif.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
+	notif.BorderSizePixel = 0
+	
+	local notifCorner = Instance.new("UICorner")
+	notifCorner.Parent = notif
+	notifCorner.CornerRadius = UDim.new(0, 12)
+	
+	local notifLabel = Instance.new("TextLabel")
+	notifLabel.Parent = notif
+	notifLabel.Size = UDim2.new(1, 0, 1, 0)
+	notifLabel.BackgroundTransparency = 1
+	notifLabel.Text = text
+	notifLabel.Font = Enum.Font.GothamBold
+	notifLabel.TextSize = 18
+	notifLabel.TextColor3 = Color3.new(1, 1, 1)
+	
+	-- Animation
+	TweenService:Create(notif, TweenInfo.new(0.5), {Position = UDim2.new(0.5, -150, 0, 20)}):Play()
+	
+	task.wait(3)
+	TweenService:Create(notif, TweenInfo.new(0.5), {Position = UDim2.new(0.5, -150, 0, -100)}):Play()
+	task.wait(0.5)
+	notifGui:Destroy()
+end
+
+-- Message de chargement
+showNotification("HMD Hub Exotique - SANS BUG JOYSTICK!")
+
+print("HMD Hub Exotique")
+print("Bouton F déplaçable ajouté!")
+print("PAS DE SIMULATION CLAVIER - PAS DE BUG JOYSTICK!")
+print("Appuyez sur F (PC) ou cliquez sur le bouton bleu (Mobile) pour Quick TP!")
