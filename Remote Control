@@ -1,0 +1,2358 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HMD Remote Control</title>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #ff0033;
+            text-shadow: 0 0 10px rgba(255, 0, 51, 0.5);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+        }
+
+        .card h2 {
+            margin-bottom: 15px;
+            color: #ff0033;
+            font-size: 1.2rem;
+        }
+
+        .video-container {
+            width: 100%;
+            height: 250px;
+            background: #000;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 15px;
+            position: relative;
+        }
+
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .placeholder {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #666;
+            font-size: 14px;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #ff0033, #cc0029);
+            color: #fff;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-bottom: 10px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(255, 0, 51, 0.4);
+        }
+
+        .btn:disabled {
+            background: #333;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn-stop {
+            background: linear-gradient(135deg, #ff4444, #cc0000);
+        }
+
+        .status {
+            padding: 10px;
+            border-radius: 8px;
+            margin-top: 10px;
+            font-size: 13px;
+        }
+
+        .status.connected {
+            background: rgba(34, 197, 94, 0.2);
+            color: #22c55e;
+            border: 1px solid rgba(34, 197, 94, 0.3);
+        }
+
+        .status.disconnected {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .message-box {
+            width: 100%;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: #fff;
+            font-size: 14px;
+            margin-bottom: 10px;
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .bluetooth-list {
+            max-height: 200px;
+            overflow-y: auto;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            padding: 10px;
+        }
+
+        .bluetooth-device {
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 5px;
+            margin-bottom: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .bluetooth-device:hover {
+            background: rgba(255, 0, 51, 0.2);
+        }
+
+        .info {
+            background: rgba(255, 193, 7, 0.1);
+            border: 1px solid rgba(255, 193, 7, 0.3);
+            color: #ffc107;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 13px;
+        }
+
+        .limitations {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+
+        .limitations h3 {
+            color: #ff0033;
+            margin-bottom: 10px;
+        }
+
+        .limitations ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .limitations li {
+            padding: 5px 0;
+            color: #ccc;
+            font-size: 13px;
+        }
+
+        .limitations li:before {
+            content: "⚠ ";
+            color: #ffc107;
+        }
+
+        .mode-selector {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 30px;
+            justify-content: center;
+        }
+
+        .mode-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            color: #fff;
+            padding: 20px 40px;
+            border-radius: 15px;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            flex: 1;
+            max-width: 200px;
+        }
+
+        .mode-btn:hover {
+            background: rgba(255, 0, 51, 0.2);
+            border-color: #ff0033;
+        }
+
+        .mode-btn.active {
+            background: linear-gradient(135deg, #ff0033, #cc0029);
+            border-color: #ff0033;
+        }
+
+        .connection-info {
+            background: rgba(255, 193, 7, 0.1);
+            border: 1px solid rgba(255, 193, 7, 0.3);
+            color: #ffc107;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            text-align: center;
+        }
+
+        .connection-id {
+            font-family: monospace;
+            font-size: 18px;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 10px 20px;
+            border-radius: 5px;
+            margin: 10px 0;
+            display: inline-block;
+            user-select: all;
+        }
+
+        .remote-video-container {
+            width: 100%;
+            height: 300px;
+            background: #000;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 15px;
+            position: relative;
+        }
+
+        .remote-video-container video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .control-panel {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .control-panel h3 {
+            color: #ff0033;
+            margin-bottom: 15px;
+        }
+
+        .control-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+        }
+
+        .control-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .control-btn:hover {
+            background: rgba(255, 0, 51, 0.3);
+            border-color: #ff0033;
+        }
+
+        .screenshot-preview {
+            width: 100%;
+            max-height: 200px;
+            object-fit: contain;
+            border-radius: 8px;
+            margin-top: 10px;
+            display: none;
+        }
+
+        .volume-slider {
+            width: 100%;
+            margin: 10px 0;
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 0, 51, 0.9);
+            color: #fff;
+            padding: 15px 20px;
+            border-radius: 10px;
+            z-index: 2000;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎮 HMD Remote Control</h1>
+        
+        <div class="info">
+            <strong>ℹ️ Mode:</strong> Sélectionnez HÔTE (PC) ou VIEWER (Tablette)
+        </div>
+
+        <div class="mode-selector">
+            <button class="mode-btn" onclick="selectMode('host')" id="hostModeBtn">🖥️ HÔTE (PC)</button>
+            <button class="mode-btn" onclick="selectMode('viewer')" id="viewerModeBtn">📱 VIEWER (Tablette)</button>
+        </div>
+
+        <!-- Host Mode -->
+        <div id="hostMode" class="hidden">
+            <div class="connection-info">
+                <div>Votre ID de connexion:</div>
+                <div class="connection-id" id="hostId">Génération en cours...</div>
+                <div style="font-size: 12px; margin-top: 10px;">Partagez cet ID avec votre tablette</div>
+            </div>
+
+            <div class="grid">
+                <!-- Webcam Section -->
+                <div class="card">
+                    <h2>📷 Webcam (Partagée)</h2>
+                    <div class="video-container">
+                        <div id="webcamPlaceholder" class="placeholder">Webcam désactivée</div>
+                        <video id="webcamVideo" autoplay muted playsinline style="display: none;"></video>
+                    </div>
+                    <button class="btn" onclick="startWebcam()">🎥 Activer Webcam</button>
+                    <button class="btn btn-stop" onclick="stopWebcam()" style="display: none;" id="stopWebcamBtn">⏹️ Arrêter</button>
+                    <div id="webcamStatus" class="status disconnected">❌ Déconnecté</div>
+                </div>
+
+                <!-- Screen Share Section -->
+                <div class="card">
+                    <h2>🖥️ Écran (Partagé)</h2>
+                    <div class="video-container">
+                        <div id="screenPlaceholder" class="placeholder">Partage d'écran désactivé</div>
+                        <video id="screenVideo" autoplay muted playsinline style="display: none;"></video>
+                    </div>
+                    <button class="btn" onclick="startScreenShare()">📤 Partager l'écran</button>
+                    <button class="btn btn-stop" onclick="stopScreenShare()" style="display: none;" id="stopScreenBtn">⏹️ Arrêter</button>
+                    <div id="screenStatus" class="status disconnected">❌ Déconnecté</div>
+                </div>
+
+                <!-- Microphone Section -->
+                <div class="card">
+                    <h2>🎤 Micro (Partagé)</h2>
+                    <div class="video-container">
+                        <div id="microPlaceholder" class="placeholder">Micro désactivé</div>
+                        <audio id="microAudio" autoplay muted style="display: none;"></audio>
+                        <canvas id="audioVisualizer" style="width: 100%; height: 100%; display: none;"></canvas>
+                    </div>
+                    <button class="btn" onclick="startMicrophone()">🎤 Activer Micro</button>
+                    <button class="btn btn-stop" onclick="stopMicrophone()" style="display: none;" id="stopMicroBtn">⏹️ Arrêter</button>
+                    <div id="microStatus" class="status disconnected">❌ Déconnecté</div>
+                </div>
+            </div>
+
+            <div class="card" style="margin-top: 20px;">
+                <h2>📡 Statut de connexion</h2>
+                <div id="connectionStatus" class="status disconnected">❌ En attente de connexion...</div>
+            </div>
+        </div>
+
+        <!-- Viewer Mode -->
+        <div id="viewerMode" class="hidden">
+            <div class="card" style="margin-bottom: 20px;">
+                <h2>🔗 Connexion au PC</h2>
+                <input type="text" id="hostIdInput" placeholder="Entrez l'ID du PC" style="width: 100%; padding: 15px; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 8px; color: #fff; font-size: 16px; margin-bottom: 10px; outline: none;">
+                <button class="btn" onclick="connectToHost()">🔴 Se connecter</button>
+                <div id="viewerConnectionStatus" class="status disconnected" style="margin-top: 10px;">❌ Non connecté</div>
+            </div>
+
+            <div class="grid">
+                <!-- Remote Webcam -->
+                <div class="card">
+                    <h2>📷 Webcam du PC</h2>
+                    <div class="remote-video-container">
+                        <div id="remoteWebcamPlaceholder" class="placeholder">En attente du flux...</div>
+                        <video id="remoteWebcamVideo" autoplay playsinline style="display: none;"></video>
+                    </div>
+                    <div id="remoteWebcamStatus" class="status disconnected">❌ Non connecté</div>
+                </div>
+
+                <!-- Remote Screen -->
+                <div class="card">
+                    <h2>🖥️ Écran du PC</h2>
+                    <div class="remote-video-container">
+                        <div id="remoteScreenPlaceholder" class="placeholder">En attente du flux...</div>
+                        <video id="remoteScreenVideo" autoplay playsinline style="display: none;"></video>
+                    </div>
+                    <div id="remoteScreenStatus" class="status disconnected">❌ Non connecté</div>
+                </div>
+
+                <!-- Remote Microphone -->
+                <div class="card">
+                    <h2>🎤 Micro du PC</h2>
+                    <div class="remote-video-container">
+                        <div id="remoteMicroPlaceholder" class="placeholder">En attente du flux audio...</div>
+                        <audio id="remoteMicroAudio" autoplay style="display: none;"></audio>
+                        <canvas id="remoteAudioVisualizer" style="width: 100%; height: 100%; display: none;"></canvas>
+                    </div>
+                    <div id="remoteMicroStatus" class="status disconnected">❌ Non connecté</div>
+                </div>
+            </div>
+
+            <!-- Control Panel -->
+            <div class="control-panel">
+                <h3>🎛️ Contrôles supplémentaires</h3>
+                <div class="control-grid">
+                    <button class="control-btn" onclick="captureScreenshot()">📸 Capture d'écran</button>
+                    <button class="control-btn" onclick="toggleFullscreen()">🖥️ Plein écran</button>
+                    <button class="control-btn" onclick="sendAlert()">🔔 Envoyer alerte</button>
+                    <button class="control-btn" onclick="requestSystemInfo()">💻 Infos système</button>
+                </div>
+                
+                <div class="control-grid" style="margin-top: 10px;">
+                    <button class="control-btn" onclick="openRemoteURL()">🌐 Ouvrir URL</button>
+                    <button class="control-btn" onclick="speakText()">🗣️ Texte vers voix</button>
+                    <button class="control-btn" onclick="playSound()">🎵 Jouer son</button>
+                    <button class="control-btn" onclick="triggerDownload()">📥 Télécharger fichier</button>
+                </div>
+                
+                <div style="margin-top: 15px;">
+                    <label>🔊 Volume système</label>
+                    <input type="range" class="volume-slider" id="volumeSlider" min="0" max="100" value="50" onchange="adjustVolume(this.value)">
+                    <div id="volumeValue" style="text-align: center; font-size: 12px; color: #888;">50%</div>
+                </div>
+
+                <div style="margin-top: 15px;">
+                    <label>💬 Message sur le PC</label>
+                    <input type="text" id="remoteMessageInput" placeholder="Message à afficher..." style="width: 100%; padding: 10px; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 8px; color: #fff; margin-top: 5px; outline: none;">
+                    <button class="btn" onclick="sendRemoteMessage()" style="margin-top: 10px;">📤 Envoyer message</button>
+                </div>
+
+                <div style="margin-top: 15px;">
+                    <label>🌐 URL à ouvrir sur le PC</label>
+                    <input type="text" id="remoteURLInput" placeholder="https://..." style="width: 100%; padding: 10px; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 8px; color: #fff; margin-top: 5px; outline: none;">
+                    <button class="btn" onclick="openRemoteURL()" style="margin-top: 10px;">🌐 Ouvrir URL</button>
+                </div>
+
+                <div style="margin-top: 15px;">
+                    <label>🗣️ Texte à prononcer</label>
+                    <input type="text" id="speakTextInput" placeholder="Texte à prononcer..." style="width: 100%; padding: 10px; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 8px; color: #fff; margin-top: 5px; outline: none;">
+                    <button class="btn" onclick="speakText()" style="margin-top: 10px;">🗣️ Prononcer</button>
+                </div>
+
+                <div style="margin-top: 15px;">
+                    <img id="screenshotPreview" class="screenshot-preview" alt="Capture d'écran">
+                    <button id="downloadScreenshot" class="btn" onclick="downloadScreenshot()" style="display: none; margin-top: 10px;">💾 Télécharger capture</button>
+                </div>
+
+                <div id="systemInfo" style="margin-top: 15px; padding: 10px; background: rgba(0, 0, 0, 0.3); border-radius: 8px; display: none; font-size: 12px;"></div>
+
+                <!-- Sound Effects Section -->
+                <div style="margin-top: 20px;">
+                    <h3 style="color: #ff0033; margin-bottom: 15px;">🔊 Effets Sonores sur le PC</h3>
+                    <div class="control-grid">
+                        <button class="control-btn" onclick="playSoundEffect('error')">❌ Erreur Windows</button>
+                        <button class="control-btn" onclick="playSoundEffect('notification')">🔔 Notification</button>
+                        <button class="control-btn" onclick="playSoundEffect('success')">✅ Succès</button>
+                        <button class="control-btn" onclick="playSoundEffect('alarm')">⏰ Alarme</button>
+                        <button class="control-btn" onclick="playSoundEffect('laser')">⚡ Laser</button>
+                        <button class="control-btn" onclick="playSoundEffect('explosion')">💥 Explosion</button>
+                        <button class="control-btn" onclick="playSoundEffect('coin')">🪙 Mario Coin</button>
+                        <button class="control-btn" onclick="playSoundEffect('jump')">🦘 Mario Jump</button>
+                        <button class="control-btn" onclick="playSoundEffect('powerup')">⭐ Power-up</button>
+                        <button class="control-btn" onclick="playSoundEffect('gameover')">💀 Game Over</button>
+                        <button class="control-btn" onclick="playSoundEffect('laugh')">😂 Rire</button>
+                        <button class="control-btn" onclick="playSoundEffect('applause')">👏 Applaudissements</button>
+                    </div>
+                </div>
+
+                <!-- Virtual Keyboard Section -->
+                <div style="margin-top: 20px;">
+                    <h3 style="color: #ff0033; margin-bottom: 15px;">⌨️ Clavier Virtuel</h3>
+                    <textarea id="virtualKeyboardInput" placeholder="Tapez votre texte ici..." style="width: 100%; padding: 15px; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 8px; color: #fff; font-size: 16px; margin-bottom: 10px; outline: none; resize: vertical; min-height: 80px;"></textarea>
+                    <button class="btn" onclick="sendVirtualKeyboardText()">📤 Envoyer le texte au PC</button>
+                    <div class="control-grid" style="margin-top: 10px;">
+                        <button class="control-btn" onclick="sendVirtualKey('Enter')">↵ Enter</button>
+                        <button class="control-btn" onclick="sendVirtualKey('Backspace')">⌫ Backspace</button>
+                        <button class="control-btn" onclick="sendVirtualKey('Space')">␣ Space</button>
+                        <button class="control-btn" onclick="sendVirtualKey('Tab')">⇥ Tab</button>
+                        <button class="control-btn" onclick="sendVirtualKey('Escape')">⎋ Esc</button>
+                        <button class="control-btn" onclick="sendVirtualKey('Delete')">Del</button>
+                    </div>
+                </div>
+
+                <!-- Video Control Section -->
+                <div style="margin-top: 20px;">
+                    <h3 style="color: #ff0033; margin-bottom: 15px;">📺 Contrôle Vidéo</h3>
+                    <div class="control-grid">
+                        <button class="control-btn" onclick="sendVideoControl('play')">▶️ Play</button>
+                        <button class="control-btn" onclick="sendVideoControl('pause')">⏸️ Pause</button>
+                        <button class="control-btn" onclick="sendVideoControl('stop')">⏹️ Stop</button>
+                        <button class="control-btn" onclick="sendVideoControl('fullscreen')">🖥️ Fullscreen</button>
+                        <button class="control-btn" onclick="sendVideoControl('mute')">🔇 Mute</button>
+                        <button class="control-btn" onclick="sendVideoControl('volume_up')">🔊 Volume +</button>
+                        <button class="control-btn" onclick="sendVideoControl('volume_down')">🔉 Volume -</button>
+                        <button class="control-btn" onclick="sendVideoControl('forward')">⏩ Forward</button>
+                        <button class="control-btn" onclick="sendVideoControl('rewind')">⏪ Rewind</button>
+                    </div>
+                </div>
+
+                <!-- File Transfer Section -->
+                <div style="margin-top: 20px;">
+                    <h3 style="color: #ff0033; margin-bottom: 15px;">📁 Transfert de Fichiers</h3>
+                    <div style="margin-bottom: 10px;">
+                        <label style="color: #fff; margin-bottom: 5px; display: block;">📤 Upload vers le PC</label>
+                        <input type="file" id="fileUpload" style="width: 100%; padding: 10px; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 8px; color: #fff; margin-bottom: 10px;">
+                        <button class="btn" onclick="uploadFile()">📤 Envoyer le fichier</button>
+                    </div>
+                    <div>
+                        <label style="color: #fff; margin-bottom: 5px; display: block;">📥 Download depuis le PC</label>
+                        <input type="text" id="downloadFilename" placeholder="Nom du fichier à télécharger..." style="width: 100%; padding: 10px; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 8px; color: #fff; margin-bottom: 10px; outline: none;">
+                        <button class="btn" onclick="requestFileDownload()">📥 Demander le fichier</button>
+                    </div>
+                </div>
+
+                <!-- System Info Section -->
+                <div style="margin-top: 20px;">
+                    <h3 style="color: #ff0033; margin-bottom: 15px;">💻 Informations Système</h3>
+                    <div class="control-grid">
+                        <button class="control-btn" onclick="requestSystemInfo()">📊 CPU/RAM</button>
+                        <button class="control-btn" onclick="requestBatteryInfo()">🔋 Batterie</button>
+                        <button class="control-btn" onclick="requestNetworkInfo()">📡 Réseau</button>
+                    </div>
+                    <div id="systemInfoDisplay" style="margin-top: 15px; padding: 15px; background: rgba(0, 0, 0, 0.3); border-radius: 8px; display: none; font-size: 13px; color: #fff;"></div>
+                </div>
+
+                <!-- Image Display Section -->
+                <div style="margin-top: 20px;">
+                    <h3 style="color: #ff0033; margin-bottom: 15px;">🖼️ Afficher une Image</h3>
+                    <input type="text" id="imageUrlInput" placeholder="URL de l'image..." style="width: 100%; padding: 10px; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 8px; color: #fff; margin-bottom: 10px; outline: none;">
+                    <button class="btn" onclick="displayImageOnScreen()">🖼️ Afficher l'image</button>
+                    <button class="btn btn-stop" onclick="hideImageFromScreen()" style="margin-top: 10px;">❌ Masquer l'image</button>
+                </div>
+
+                <!-- Admin Info Section -->
+                <div style="margin-top: 20px; padding: 15px; background: rgba(255, 0, 51, 0.1); border: 2px solid #ff0033; border-radius: 8px;">
+                    <h3 style="color: #ff0033; margin-bottom: 15px;">🔐 Admin Info</h3>
+                    <input type="password" id="adminPassword" placeholder="Mot de passe admin..." style="width: 100%; padding: 10px; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 8px; color: #fff; margin-bottom: 10px; outline: none;">
+                    <button class="btn" onclick="checkAdminPassword()">🔓 Accéder aux infos</button>
+                    <div id="adminInfoDisplay" style="margin-top: 15px; padding: 15px; background: rgba(0, 0, 0, 0.3); border-radius: 8px; display: none; font-size: 13px; color: #fff;"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="limitations">
+            <h3>⚠️ Instructions</h3>
+            <ul>
+                <li><strong>PC (Hôte):</strong> Cliquez sur "HÔTE", activez webcam/écran, partagez l'ID</li>
+                <li><strong>Tablette (Viewer):</strong> Cliquez sur "VIEWER", entrez l'ID du PC</li>
+                <li>Les deux appareils doivent être connectés à internet</li>
+                <li>Utilisez Chrome ou Edge pour le meilleur support</li>
+                <li>Nécessite HTTPS pour certaines fonctionnalités</li>
+            </ul>
+            
+            <h3>🎛️ Fonctionnalités disponibles</h3>
+            <ul>
+                <li><strong>✅ Capture d'écran:</strong> Fonctionne quand le partage d'écran est actif</li>
+                <li><strong>✅ Plein écran:</strong> Fonctionne sur les vidéos</li>
+                <li><strong>✅ Alerte:</strong> Envoie notification sonore au PC</li>
+                <li><strong>✅ Infos système:</strong> Affiche infos basiques du navigateur</li>
+                <li><strong>⚠️ Volume:</strong> Limité par sécurité du navigateur</li>
+                <li><strong>✅ Message distant:</strong> Affiche overlay sur le PC</li>
+                <li><strong>✅ Ouvrir URL:</strong> Ouvre un site web sur le PC</li>
+                <li><strong>✅ Texte vers voix:</strong> Prononce du texte sur le PC</li>
+                <li><strong>✅ Jouer son:</strong> Joue un son sur le PC</li>
+                <li><strong>✅ Télécharger fichier:</strong> Génère et télécharge un fichier</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        let peer = null;
+        let currentMode = null;
+        let webcamStream = null;
+        let screenStream = null;
+        let microphoneStream = null;
+        let webcamCall = null;
+        let screenCall = null;
+        let microphoneCall = null;
+        let audioContext = null;
+        let analyser = null;
+        let animationId = null;
+
+        // Mode selection
+        function selectMode(mode) {
+            currentMode = mode;
+            
+            document.getElementById('hostModeBtn').classList.toggle('active', mode === 'host');
+            document.getElementById('viewerModeBtn').classList.toggle('active', mode === 'viewer');
+            
+            document.getElementById('hostMode').classList.toggle('hidden', mode !== 'host');
+            document.getElementById('viewerMode').classList.toggle('hidden', mode !== 'viewer');
+            
+            if (mode === 'host') {
+                initHost();
+            } else {
+                document.getElementById('hostMode').classList.add('hidden');
+                document.getElementById('viewerMode').classList.remove('hidden');
+            }
+        }
+
+        // Host Mode
+        function initHost() {
+            // Create peer with random ID
+            peer = new Peer();
+            
+            peer.on('open', (id) => {
+                document.getElementById('hostId').textContent = id;
+                document.getElementById('connectionStatus').textContent = '✅ Prêt à recevoir des connexions';
+                document.getElementById('connectionStatus').className = 'status connected';
+            });
+            
+            peer.on('connection', (conn) => {
+                conn.on('open', () => {
+                    document.getElementById('connectionStatus').textContent = '✅ Tablette connectée !';
+                    document.getElementById('connectionStatus').className = 'status connected';
+                });
+                
+                conn.on('data', (data) => {
+                    if (data.type === 'request_webcam' && webcamStream) {
+                        startWebcamCall(conn.peer);
+                    } else if (data.type === 'request_screen' && screenStream) {
+                        startScreenCall(conn.peer);
+                    } else if (data.type === 'request_microphone' && microphoneStream) {
+                        startMicrophoneCall(conn.peer);
+                    } else if (data.type === 'alert') {
+                        handleRemoteAlert();
+                    } else if (data.type === 'system_info_request') {
+                        handleSystemInfoRequest(conn);
+                    } else if (data.type === 'volume_change') {
+                        handleVolumeChange(data.value);
+                    } else if (data.type === 'remote_message') {
+                        handleRemoteMessage(data.message);
+                    } else if (data.type === 'open_url') {
+                        handleOpenURL(data.url);
+                    } else if (data.type === 'speak_text') {
+                        handleSpeakText(data.text);
+                    } else if (data.type === 'play_sound') {
+                        handlePlaySound();
+                    } else if (data.type === 'trigger_download') {
+                        handleTriggerDownload(conn);
+                    } else if (data.type === 'play_sound_effect') {
+                        handlePlaySoundEffect(data.effect);
+                    } else if (data.type === 'virtual_keyboard_text') {
+                        handleVirtualKeyboardText(data.text);
+                    } else if (data.type === 'virtual_key') {
+                        handleVirtualKey(data.key);
+                    } else if (data.type === 'video_control') {
+                        handleVideoControl(data.action);
+                    } else if (data.type === 'file_upload') {
+                        handleFileUpload(data.filename, data.content);
+                    } else if (data.type === 'file_download_request') {
+                        handleFileDownloadRequest(conn, data.filename);
+                    } else if (data.type === 'battery_info_request') {
+                        handleBatteryInfoRequest(conn);
+                    } else if (data.type === 'network_info_request') {
+                        handleNetworkInfoRequest(conn);
+                    } else if (data.type === 'display_image') {
+                        handleDisplayImage(data.url);
+                    } else if (data.type === 'hide_image') {
+                        handleHideImage();
+                    }
+                });
+                
+                conn.on('close', () => {
+                    document.getElementById('connectionStatus').textContent = '❌ Connexion fermée';
+                    document.getElementById('connectionStatus').className = 'status disconnected';
+                });
+            });
+            
+            peer.on('call', (call) => {
+                call.answer();
+                call.on('stream', (stream) => {
+                    // Handle incoming stream if needed
+                });
+            });
+            
+            peer.on('error', (err) => {
+                console.error('Peer error:', err);
+                document.getElementById('connectionStatus').textContent = '❌ Erreur: ' + err.type;
+                document.getElementById('connectionStatus').className = 'status disconnected';
+            });
+        }
+
+        // Viewer Mode
+        let hostConnection = null;
+        
+        function connectToHost() {
+            const hostId = document.getElementById('hostIdInput').value.trim();
+            if (!hostId) {
+                alert('Veuillez entrer l\'ID du PC');
+                return;
+            }
+            
+            peer = new Peer();
+            
+            peer.on('open', () => {
+                hostConnection = peer.connect(hostId);
+                
+                hostConnection.on('open', () => {
+                    document.getElementById('viewerConnectionStatus').textContent = '✅ Connecté au PC';
+                    document.getElementById('viewerConnectionStatus').className = 'status connected';
+                    
+                    // Request streams
+                    hostConnection.send({ type: 'request_webcam' });
+                    hostConnection.send({ type: 'request_screen' });
+                    hostConnection.send({ type: 'request_microphone' });
+                    
+                    // Listen for responses
+                    hostConnection.on('data', (data) => {
+                        if (data.type === 'system_info_response') {
+                            handleSystemInfoResponse(data.info);
+                        } else if (data.type === 'download_ready') {
+                            handleDownloadReady(data.filename, data.content);
+                        } else if (data.type === 'battery_info_response') {
+                            handleBatteryInfoResponse(data.info);
+                        } else if (data.type === 'network_info_response') {
+                            handleNetworkInfoResponse(data.info);
+                        } else if (data.type === 'file_download_ready') {
+                            handleFileDownloadReady(data.filename, data.content);
+                        }
+                    });
+                });
+                
+                hostConnection.on('error', (err) => {
+                    console.error('Connection error:', err);
+                    document.getElementById('viewerConnectionStatus').textContent = '❌ Erreur de connexion';
+                    document.getElementById('viewerConnectionStatus').className = 'status disconnected';
+                });
+                
+                hostConnection.on('close', () => {
+                    document.getElementById('viewerConnectionStatus').textContent = '❌ Connexion fermée';
+                    document.getElementById('viewerConnectionStatus').className = 'status disconnected';
+                    hostConnection = null;
+                });
+            });
+            
+            peer.on('call', (call) => {
+                call.answer();
+                
+                call.on('stream', (stream) => {
+                    // Determine which video element to use based on call type
+                    if (call.metadata && call.metadata.type === 'webcam') {
+                        const video = document.getElementById('remoteWebcamVideo');
+                        video.srcObject = stream;
+                        video.style.display = 'block';
+                        document.getElementById('remoteWebcamPlaceholder').style.display = 'none';
+                        document.getElementById('remoteWebcamStatus').textContent = '✅ Connecté';
+                        document.getElementById('remoteWebcamStatus').className = 'status connected';
+                    } else if (call.metadata && call.metadata.type === 'screen') {
+                        const video = document.getElementById('remoteScreenVideo');
+                        video.srcObject = stream;
+                        video.style.display = 'block';
+                        document.getElementById('remoteScreenPlaceholder').style.display = 'none';
+                        document.getElementById('remoteScreenStatus').textContent = '✅ Connecté';
+                        document.getElementById('remoteScreenStatus').className = 'status connected';
+                    } else if (call.metadata && call.metadata.type === 'microphone') {
+                        const audio = document.getElementById('remoteMicroAudio');
+                        audio.srcObject = stream;
+                        audio.style.display = 'block';
+                        document.getElementById('remoteMicroPlaceholder').style.display = 'none';
+                        document.getElementById('remoteMicroStatus').textContent = '✅ Connecté';
+                        document.getElementById('remoteMicroStatus').className = 'status connected';
+                        
+                        // Start audio visualization
+                        startRemoteAudioVisualization(stream);
+                    }
+                });
+            });
+            
+            peer.on('error', (err) => {
+                console.error('Peer error:', err);
+                document.getElementById('viewerConnectionStatus').textContent = '❌ Erreur: ' + err.type;
+                document.getElementById('viewerConnectionStatus').className = 'status disconnected';
+            });
+        }
+
+        // Webcam functionality
+        async function startWebcam() {
+            try {
+                webcamStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+                const video = document.getElementById('webcamVideo');
+                video.srcObject = webcamStream;
+                video.style.display = 'block';
+                document.getElementById('webcamPlaceholder').style.display = 'none';
+                document.getElementById('stopWebcamBtn').style.display = 'block';
+                document.getElementById('webcamStatus').className = 'status connected';
+                document.getElementById('webcamStatus').textContent = '✅ Connecté';
+                
+                // Notify connected peers
+                notifyPeers('webcam');
+            } catch (error) {
+                console.error('Webcam error:', error);
+                alert('Impossible d\'accéder à la webcam. Vérifiez les permissions.');
+            }
+        }
+
+        function stopWebcam() {
+            if (webcamStream) {
+                webcamStream.getTracks().forEach(track => track.stop());
+                webcamStream = null;
+                document.getElementById('webcamVideo').style.display = 'none';
+                document.getElementById('webcamPlaceholder').style.display = 'flex';
+                document.getElementById('stopWebcamBtn').style.display = 'none';
+                document.getElementById('webcamStatus').className = 'status disconnected';
+                document.getElementById('webcamStatus').textContent = '❌ Déconnecté';
+            }
+        }
+
+        // Screen share functionality
+        async function startScreenShare() {
+            try {
+                screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+                const video = document.getElementById('screenVideo');
+                video.srcObject = screenStream;
+                video.style.display = 'block';
+                document.getElementById('screenPlaceholder').style.display = 'none';
+                document.getElementById('stopScreenBtn').style.display = 'block';
+                document.getElementById('screenStatus').className = 'status connected';
+                document.getElementById('screenStatus').textContent = '✅ Connecté';
+                
+                // Notify connected peers
+                notifyPeers('screen');
+                
+                screenStream.getVideoTracks()[0].onended = () => {
+                    stopScreenShare();
+                };
+            } catch (error) {
+                console.error('Screen share error:', error);
+                alert('Impossible de partager l\'écran. Vérifiez les permissions.');
+            }
+        }
+
+        function stopScreenShare() {
+            if (screenStream) {
+                screenStream.getTracks().forEach(track => track.stop());
+                screenStream = null;
+                document.getElementById('screenVideo').style.display = 'none';
+                document.getElementById('screenPlaceholder').style.display = 'flex';
+                document.getElementById('stopScreenBtn').style.display = 'none';
+                document.getElementById('screenStatus').className = 'status disconnected';
+                document.getElementById('screenStatus').textContent = '❌ Déconnecté';
+            }
+        }
+
+        // Microphone functionality
+        async function startMicrophone() {
+            try {
+                microphoneStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+                const audio = document.getElementById('microAudio');
+                audio.srcObject = microphoneStream;
+                audio.style.display = 'block';
+                document.getElementById('microPlaceholder').style.display = 'none';
+                document.getElementById('stopMicroBtn').style.display = 'block';
+                document.getElementById('microStatus').className = 'status connected';
+                document.getElementById('microStatus').textContent = '✅ Connecté';
+                
+                // Start audio visualization
+                startLocalAudioVisualization(microphoneStream);
+                
+                // Notify connected peers
+                notifyPeers('microphone');
+            } catch (error) {
+                console.error('Microphone error:', error);
+                alert('Impossible d\'accéder au micro. Vérifiez les permissions.');
+            }
+        }
+
+        function stopMicrophone() {
+            if (microphoneStream) {
+                microphoneStream.getTracks().forEach(track => track.stop());
+                microphoneStream = null;
+                document.getElementById('microAudio').style.display = 'none';
+                document.getElementById('microPlaceholder').style.display = 'flex';
+                document.getElementById('stopMicroBtn').style.display = 'none';
+                document.getElementById('microStatus').className = 'status disconnected';
+                document.getElementById('microStatus').textContent = '❌ Déconnecté';
+                
+                // Stop audio visualization
+                if (animationId) {
+                    cancelAnimationFrame(animationId);
+                    animationId = null;
+                }
+                
+                if (audioContext) {
+                    audioContext.close();
+                    audioContext = null;
+                }
+            }
+        }
+
+        // WebRTC Call functions
+        function startWebcamCall(peerId) {
+            if (!webcamStream) return;
+            
+            const call = peer.call(peerId, webcamStream, { metadata: { type: 'webcam' } });
+            webcamCall = call;
+        }
+
+        function startScreenCall(peerId) {
+            if (!screenStream) return;
+            
+            const call = peer.call(peerId, screenStream, { metadata: { type: 'screen' } });
+            screenCall = call;
+        }
+
+        function startMicrophoneCall(peerId) {
+            if (!microphoneStream) return;
+            
+            const call = peer.call(peerId, microphoneStream, { metadata: { type: 'microphone' } });
+            microphoneCall = call;
+        }
+
+        function notifyPeers(type) {
+            // This would notify connected peers that a new stream is available
+            // For simplicity, we rely on the peer connection to handle this
+        }
+
+        // Audio Visualization Functions
+        function startLocalAudioVisualization(stream) {
+            try {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                analyser = audioContext.createAnalyser();
+                const source = audioContext.createMediaStreamSource(stream);
+                source.connect(analyser);
+                analyser.fftSize = 256;
+                
+                const canvas = document.getElementById('audioVisualizer');
+                canvas.style.display = 'block';
+                const ctx = canvas.getContext('2d');
+                
+                const bufferLength = analyser.frequencyBinCount;
+                const dataArray = new Uint8Array(bufferLength);
+                
+                function draw() {
+                    animationId = requestAnimationFrame(draw);
+                    analyser.getByteFrequencyData(dataArray);
+                    
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    
+                    const barWidth = (canvas.width / bufferLength) * 2.5;
+                    let barHeight;
+                    let x = 0;
+                    
+                    for (let i = 0; i < bufferLength; i++) {
+                        barHeight = dataArray[i] / 2;
+                        
+                        const gradient = ctx.createLinearGradient(0, canvas.height - barHeight, 0, canvas.height);
+                        gradient.addColorStop(0, '#ff0033');
+                        gradient.addColorStop(1, '#cc0029');
+                        
+                        ctx.fillStyle = gradient;
+                        ctx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
+                        
+                        x += barWidth + 1;
+                    }
+                }
+                
+                draw();
+            } catch (error) {
+                console.error('Audio visualization error:', error);
+            }
+        }
+
+        function startRemoteAudioVisualization(stream) {
+            try {
+                const remoteAudioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const remoteAnalyser = remoteAudioContext.createAnalyser();
+                const source = remoteAudioContext.createMediaStreamSource(stream);
+                source.connect(remoteAnalyser);
+                remoteAnalyser.fftSize = 256;
+                
+                const canvas = document.getElementById('remoteAudioVisualizer');
+                canvas.style.display = 'block';
+                const ctx = canvas.getContext('2d');
+                
+                const bufferLength = remoteAnalyser.frequencyBinCount;
+                const dataArray = new Uint8Array(bufferLength);
+                
+                function draw() {
+                    requestAnimationFrame(draw);
+                    remoteAnalyser.getByteFrequencyData(dataArray);
+                    
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    
+                    const barWidth = (canvas.width / bufferLength) * 2.5;
+                    let barHeight;
+                    let x = 0;
+                    
+                    for (let i = 0; i < bufferLength; i++) {
+                        barHeight = dataArray[i] / 2;
+                        
+                        const gradient = ctx.createLinearGradient(0, canvas.height - barHeight, 0, canvas.height);
+                        gradient.addColorStop(0, '#ff0033');
+                        gradient.addColorStop(1, '#cc0029');
+                        
+                        ctx.fillStyle = gradient;
+                        ctx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
+                        
+                        x += barWidth + 1;
+                    }
+                }
+                
+                draw();
+            } catch (error) {
+                console.error('Remote audio visualization error:', error);
+            }
+        }
+
+        // New Control Functions
+        let currentScreenshot = null;
+
+        function captureScreenshot() {
+            const video = document.getElementById('remoteScreenVideo');
+            if (video.style.display === 'none' || !video.srcObject) {
+                alert('Aucun flux d\'écran disponible. Activez d\'abord le partage d\'écran.');
+                return;
+            }
+
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0);
+
+            currentScreenshot = canvas.toDataURL('image/png');
+            const preview = document.getElementById('screenshotPreview');
+            preview.src = currentScreenshot;
+            preview.style.display = 'block';
+
+            document.getElementById('downloadScreenshot').style.display = 'block';
+            showNotification('Capture d\'écran effectuée !');
+        }
+
+        function downloadScreenshot() {
+            if (!currentScreenshot) return;
+
+            const link = document.createElement('a');
+            link.download = 'screenshot-' + Date.now() + '.png';
+            link.href = currentScreenshot;
+            link.click();
+        }
+
+        function toggleFullscreen() {
+            const video = document.getElementById('remoteScreenVideo');
+            if (video.style.display === 'none' || !video.srcObject) {
+                alert('Aucun flux vidéo disponible.');
+                return;
+            }
+
+            if (video.requestFullscreen) {
+                video.requestFullscreen();
+            } else if (video.webkitRequestFullscreen) {
+                video.webkitRequestFullscreen();
+            } else if (video.msRequestFullscreen) {
+                video.msRequestFullscreen();
+            }
+        }
+
+        function sendAlert() {
+            if (!hostConnection || !hostConnection.open) {
+                alert('Non connecté au PC');
+                return;
+            }
+
+            try {
+                hostConnection.send({ type: 'alert' });
+                showNotification('Alerte envoyée au PC !');
+            } catch (err) {
+                console.error('Error sending alert:', err);
+                alert('Erreur lors de l\'envoi de l\'alerte');
+            }
+        }
+
+        function requestSystemInfo() {
+            if (!hostConnection || !hostConnection.open) {
+                alert('Non connecté au PC');
+                return;
+            }
+
+            try {
+                hostConnection.send({ type: 'system_info_request' });
+                showNotification('Demande d\'infos système envoyée');
+            } catch (err) {
+                console.error('Error requesting system info:', err);
+                alert('Erreur lors de la demande d\'infos système');
+            }
+        }
+
+        function adjustVolume(value) {
+            document.getElementById('volumeValue').textContent = value + '%';
+            
+            if (!hostConnection || !hostConnection.open) {
+                return;
+            }
+
+            try {
+                hostConnection.send({ type: 'volume_change', value: value });
+            } catch (err) {
+                console.error('Error adjusting volume:', err);
+            }
+        }
+
+        function sendRemoteMessage() {
+            const message = document.getElementById('remoteMessageInput').value.trim();
+            if (!message) {
+                alert('Veuillez entrer un message');
+                return;
+            }
+
+            if (!hostConnection || !hostConnection.open) {
+                alert('Non connecté au PC');
+                return;
+            }
+
+            try {
+                hostConnection.send({ type: 'remote_message', message: message });
+                showNotification('Message envoyé au PC !');
+                document.getElementById('remoteMessageInput').value = '';
+            } catch (err) {
+                console.error('Error sending message:', err);
+                alert('Erreur lors de l\'envoi du message');
+            }
+        }
+
+        function openRemoteURL() {
+            const url = document.getElementById('remoteURLInput').value.trim();
+            if (!url) {
+                alert('Veuillez entrer une URL');
+                return;
+            }
+
+            if (!hostConnection || !hostConnection.open) {
+                alert('Non connecté au PC');
+                return;
+            }
+
+            try {
+                hostConnection.send({ type: 'open_url', url: url });
+                showNotification('URL envoyée au PC !');
+                document.getElementById('remoteURLInput').value = '';
+            } catch (err) {
+                console.error('Error opening URL:', err);
+                alert('Erreur lors de l\'envoi de l\'URL');
+            }
+        }
+
+        function speakText() {
+            const text = document.getElementById('speakTextInput').value.trim();
+            if (!text) {
+                alert('Veuillez entrer du texte');
+                return;
+            }
+
+            if (!hostConnection || !hostConnection.open) {
+                alert('Non connecté au PC');
+                return;
+            }
+
+            try {
+                hostConnection.send({ type: 'speak_text', text: text });
+                showNotification('Texte envoyé pour prononciation !');
+                document.getElementById('speakTextInput').value = '';
+            } catch (err) {
+                console.error('Error speaking text:', err);
+                alert('Erreur lors de l\'envoi du texte');
+            }
+        }
+
+        function playSound() {
+            if (!hostConnection || !hostConnection.open) {
+                alert('Non connecté au PC');
+                return;
+            }
+
+            try {
+                hostConnection.send({ type: 'play_sound' });
+                showNotification('Commande son envoyée !');
+            } catch (err) {
+                console.error('Error playing sound:', err);
+                alert('Erreur lors de la commande son');
+            }
+        }
+
+        function triggerDownload() {
+            if (!hostConnection || !hostConnection.open) {
+                alert('Non connecté au PC');
+                return;
+            }
+
+            try {
+                hostConnection.send({ type: 'trigger_download' });
+                showNotification('Commande téléchargement envoyée !');
+            } catch (err) {
+                console.error('Error triggering download:', err);
+                alert('Erreur lors de la commande téléchargement');
+            }
+        }
+
+        function playSoundEffect(effect) {
+            if (!hostConnection || !hostConnection.open) {
+                alert('Non connecté au PC');
+                return;
+            }
+
+            try {
+                hostConnection.send({ type: 'play_sound_effect', effect: effect });
+                showNotification('🔊 Effet sonore envoyé !');
+            } catch (err) {
+                console.error('Error playing sound effect:', err);
+                alert('Erreur lors de l\'envoi de l\'effet sonore');
+            }
+        }
+
+        // Virtual Keyboard Functions
+        function sendVirtualKeyboardText() {
+            const text = document.getElementById('virtualKeyboardInput').value;
+            if (!text) {
+                alert('Veuillez entrer du texte');
+                return;
+            }
+
+            if (!hostConnection || !hostConnection.open) {
+                alert('Non connecté au PC');
+                return;
+            }
+
+            try {
+                hostConnection.send({ type: 'virtual_keyboard_text', text: text });
+                showNotification('⌨️ Texte envoyé au PC !');
+                document.getElementById('virtualKeyboardInput').value = '';
+            } catch (err) {
+                console.error('Error sending virtual keyboard text:', err);
+                alert('Erreur lors de l\'envoi du texte');
+            }
+        }
+
+        function sendVirtualKey(key) {
+            if (!hostConnection || !hostConnection.open) {
+                alert('Non connecté au PC');
+                return;
+            }
+
+            try {
+                hostConnection.send({ type: 'virtual_key', key: key });
+                showNotification('⌨️ Touche envoyée: ' + key);
+            } catch (err) {
+                console.error('Error sending virtual key:', err);
+                alert('Erreur lors de l\'envoi de la touche');
+            }
+        }
+
+        // Video Control Functions
+        function sendVideoControl(action) {
+            if (!hostConnection || !hostConnection.open) {
+                alert('Non connecté au PC');
+                return;
+            }
+
+            try {
+                hostConnection.send({ type: 'video_control', action: action });
+                showNotification('📺 Commande vidéo envoyée: ' + action);
+            } catch (err) {
+                console.error('Error sending video control:', err);
+                alert('Erreur lors de l\'envoi de la commande vidéo');
+            }
+        }
+
+        // File Transfer Functions
+        function uploadFile() {
+            const fileInput = document.getElementById('fileUpload');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                alert('Veuillez sélectionner un fichier');
+                return;
+            }
+
+            if (!hostConnection || !hostConnection.open) {
+                alert('Non connecté au PC');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const content = e.target.result;
+                    // For large files, we might need to chunk this
+                    if (content.length > 100000) {
+                        alert('Fichier trop grand. Limite: 100KB');
+                        return;
+                    }
+                    
+                    hostConnection.send({ 
+                        type: 'file_upload', 
+                        filename: file.name, 
+                        content: content 
+                    });
+                    showNotification('📤 Fichier envoyé: ' + file.name);
+                    fileInput.value = '';
+                } catch (err) {
+                    console.error('Error uploading file:', err);
+                    alert('Erreur lors de l\'envoi du fichier');
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function requestFileDownload() {
+            const filename = document.getElementById('downloadFilename').value.trim();
+            if (!filename) {
+                alert('Veuillez entrer un nom de fichier');
+                return;
+            }
+
+            if (!hostConnection || !hostConnection.open) {
+                alert('Non connecté au PC');
+                return;
+            }
+
+            try {
+                hostConnection.send({ type: 'file_download_request', filename: filename });
+                showNotification('📥 Demande de fichier envoyée');
+            } catch (err) {
+                console.error('Error requesting file download:', err);
+                alert('Erreur lors de la demande de fichier');
+            }
+        }
+
+        // System Info Functions
+        function requestSystemInfo() {
+            if (!hostConnection || !hostConnection.open) {
+                alert('Non connecté au PC');
+                return;
+            }
+
+            try {
+                hostConnection.send({ type: 'system_info_request' });
+                showNotification('📊 Demande d\'infos système envoyée');
+            } catch (err) {
+                console.error('Error requesting system info:', err);
+                alert('Erreur lors de la demande d\'infos système');
+            }
+        }
+
+        function requestBatteryInfo() {
+            if (!hostConnection || !hostConnection.open) {
+                alert('Non connecté au PC');
+                return;
+            }
+
+            try {
+                hostConnection.send({ type: 'battery_info_request' });
+                showNotification('🔋 Demande d\'infos batterie envoyée');
+            } catch (err) {
+                console.error('Error requesting battery info:', err);
+                alert('Erreur lors de la demande d\'infos batterie');
+            }
+        }
+
+        function requestNetworkInfo() {
+            if (!hostConnection || !hostConnection.open) {
+                alert('Non connecté au PC');
+                return;
+            }
+
+            try {
+                hostConnection.send({ type: 'network_info_request' });
+                showNotification('📡 Demande d\'infos réseau envoyée');
+            } catch (err) {
+                console.error('Error requesting network info:', err);
+                alert('Erreur lors de la demande d\'infos réseau');
+            }
+        }
+
+        // Image Display Functions
+        function displayImageOnScreen() {
+            const imageUrl = document.getElementById('imageUrlInput').value.trim();
+            if (!imageUrl) {
+                alert('Veuillez entrer une URL d\'image');
+                return;
+            }
+
+            if (!hostConnection || !hostConnection.open) {
+                alert('Non connecté au PC');
+                return;
+            }
+
+            try {
+                hostConnection.send({ type: 'display_image', url: imageUrl });
+                showNotification('🖼️ Image envoyée pour affichage');
+            } catch (err) {
+                console.error('Error displaying image:', err);
+                alert('Erreur lors de l\'envoi de l\'image');
+            }
+        }
+
+        function hideImageFromScreen() {
+            if (!hostConnection || !hostConnection.open) {
+                alert('Non connecté au PC');
+                return;
+            }
+
+            try {
+                hostConnection.send({ type: 'hide_image' });
+                showNotification('❌ Image masquée');
+            } catch (err) {
+                console.error('Error hiding image:', err);
+                alert('Erreur lors du masquage de l\'image');
+            }
+        }
+
+        // Admin Info Functions
+        function checkAdminPassword() {
+            const password = document.getElementById('adminPassword').value;
+            const correctPassword = '1937';
+            
+            if (password === correctPassword) {
+                getAdminInfo();
+                showNotification('🔓 Mot de passe correct');
+            } else {
+                alert('❌ Mot de passe incorrect!');
+                document.getElementById('adminPassword').value = '';
+            }
+        }
+
+        async function getAdminInfo() {
+            const adminInfoDiv = document.getElementById('adminInfoDisplay');
+            adminInfoDiv.style.display = 'block';
+            adminInfoDiv.innerHTML = '🔄 Chargement des informations...';
+            
+            try {
+                // Get IP address
+                const ipResponse = await fetch('https://api.ipify.org?format=json');
+                const ipData = await ipResponse.json();
+                const ipAddress = ipData.ip;
+                
+                // Get geolocation
+                const geoResponse = await fetch(`https://ipapi.co/${ipAddress}/json/`);
+                const geoData = await geoResponse.json();
+                
+                // Get browser info
+                const browserInfo = {
+                    userAgent: navigator.userAgent,
+                    language: navigator.language,
+                    platform: navigator.platform,
+                    screen: `${screen.width}x${screen.height}`,
+                    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+                };
+                
+                // Display all info
+                adminInfoDiv.innerHTML = `
+                    <strong>🌐 Informations IP:</strong><br><br>
+                    <strong>Adresse IP:</strong> ${ipAddress}<br>
+                    <strong>Ville:</strong> ${geoData.city || 'Inconnue'}<br>
+                    <strong>Région:</strong> ${geoData.region || 'Inconnue'}<br>
+                    <strong>Pays:</strong> ${geoData.country_name || 'Inconnu'}<br>
+                    <strong>Code Pays:</strong> ${geoData.country_code || 'Inconnu'}<br>
+                    <strong>Code Postal:</strong> ${geoData.postal || 'Inconnu'}<br>
+                    <strong>Latitude:</strong> ${geoData.latitude || 'Inconnue'}<br>
+                    <strong>Longitude:</strong> ${geoData.longitude || 'Inconnue'}<br>
+                    <strong>Fournisseur ISP:</strong> ${geoData.org || 'Inconnu'}<br>
+                    <strong>Timezone:</strong> ${geoData.timezone || 'Inconnu'}<br><br>
+                    <strong>💻 Informations Navigateur:</strong><br><br>
+                    <strong>Platforme:</strong> ${browserInfo.platform}<br>
+                    <strong>Langue:</strong> ${browserInfo.language}<br>
+                    <strong>Écran:</strong> ${browserInfo.screen}<br>
+                    <strong>Timezone:</strong> ${browserInfo.timezone}<br>
+                    <strong>User Agent:</strong> ${browserInfo.userAgent.substring(0, 80)}...
+                `;
+            } catch (error) {
+                console.error('Error getting admin info:', error);
+                adminInfoDiv.innerHTML = '❌ Erreur lors de la récupération des informations. Vérifiez votre connexion internet.';
+            }
+        }
+
+        // Host-side handlers for remote commands
+        function handleRemoteAlert() {
+            alert('🔔 Alerte reçue de la tablette !');
+            // Also play a sound if possible
+            try {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.frequency.value = 800;
+                oscillator.type = 'sine';
+                gainNode.gain.value = 0.3;
+                
+                oscillator.start();
+                setTimeout(() => {
+                    oscillator.stop();
+                    audioContext.close();
+                }, 500);
+            } catch (e) {
+                console.log('Audio not available');
+            }
+        }
+
+        function handleSystemInfoRequest(conn) {
+            const systemInfo = {
+                userAgent: navigator.userAgent,
+                platform: navigator.platform,
+                language: navigator.language,
+                screen: {
+                    width: screen.width,
+                    height: screen.height,
+                    availWidth: screen.availWidth,
+                    availHeight: screen.availHeight
+                },
+                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                date: new Date().toISOString()
+            };
+            
+            conn.send({
+                type: 'system_info_response',
+                info: systemInfo
+            });
+        }
+
+        function handleVolumeChange(value) {
+            // Browser security limits direct volume control
+            // This is a placeholder - actual volume control requires system-level access
+            console.log('Volume change requested:', value);
+            alert(`🔊 Changement de volume demandé: ${value}%\n\nNote: Le contrôle direct du volume n'est pas possible via navigateur pour des raisons de sécurité.`);
+        }
+
+        function handleRemoteMessage(message) {
+            // Create a custom alert with the message
+            const overlay = document.createElement('div');
+            overlay.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.8);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 10000;
+            `;
+            
+            const messageBox = document.createElement('div');
+            messageBox.style.cssText = `
+                background: linear-gradient(135deg, #1a1a2e, #16213e);
+                border: 2px solid #ff0033;
+                border-radius: 20px;
+                padding: 40px;
+                max-width: 500px;
+                text-align: center;
+                color: #fff;
+            `;
+            
+            messageBox.innerHTML = `
+                <h2 style="color: #ff0033; margin-bottom: 20px;">💬 Message de la tablette</h2>
+                <p style="font-size: 18px; margin-bottom: 20px;">${message}</p>
+                <button onclick="this.parentElement.parentElement.remove()" style="
+                    background: linear-gradient(135deg, #ff0033, #cc0029);
+                    color: #fff;
+                    border: none;
+                    padding: 15px 30px;
+                    border-radius: 10px;
+                    cursor: pointer;
+                    font-size: 16px;
+                    font-weight: 600;
+                ">Fermer</button>
+            `;
+            
+            overlay.appendChild(messageBox);
+            document.body.appendChild(overlay);
+            
+            // Play notification sound
+            try {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.frequency.value = 600;
+                oscillator.type = 'sine';
+                gainNode.gain.value = 0.2;
+                
+                oscillator.start();
+                setTimeout(() => {
+                    oscillator.stop();
+                    audioContext.close();
+                }, 300);
+            } catch (e) {
+                console.log('Audio not available');
+            }
+            
+            // Auto-remove after 10 seconds
+            setTimeout(() => {
+                if (overlay.parentElement) {
+                    overlay.remove();
+                }
+            }, 10000);
+        }
+
+        function handleSystemInfoResponse(info) {
+            const systemInfoDiv = document.getElementById('systemInfoDisplay');
+            systemInfoDiv.style.display = 'block';
+            systemInfoDiv.innerHTML = `
+                <strong>💻 Informations système du PC:</strong><br><br>
+                <strong>Plateforme:</strong> ${info.platform}<br>
+                <strong>Langue:</strong> ${info.language}<br>
+                <strong>Écran:</strong> ${info.screen.width}x${info.screen.height}<br>
+                <strong>Fuseau horaire:</strong> ${info.timezone}<br>
+                <strong>Date:</strong> ${new Date(info.date).toLocaleString('fr-FR')}<br>
+                <strong>User Agent:</strong> ${info.userAgent.substring(0, 60)}...
+            `;
+        }
+
+        function handleBatteryInfoResponse(info) {
+            const systemInfoDiv = document.getElementById('systemInfoDisplay');
+            systemInfoDiv.style.display = 'block';
+            systemInfoDiv.innerHTML = `
+                <strong>🔋 Informations batterie du PC:</strong><br><br>
+                <strong>Niveau:</strong> ${info.level}<br>
+                <strong>En charge:</strong> ${info.charging}<br>
+                <strong>Temps de charge:</strong> ${info.chargingTime}<br>
+                <strong>Temps de décharge:</strong> ${info.dischargingTime}
+            `;
+        }
+
+        function handleNetworkInfoResponse(info) {
+            const systemInfoDiv = document.getElementById('systemInfoDisplay');
+            systemInfoDiv.style.display = 'block';
+            systemInfoDiv.innerHTML = `
+                <strong>📡 Informations réseau du PC:</strong><br><br>
+                <strong>En ligne:</strong> ${info.online}<br>
+                <strong>Type de connexion:</strong> ${info.connectionType}<br>
+                <strong>Débit descendant:</strong> ${info.downlink}<br>
+                <strong>Latence (RTT):</strong> ${info.rtt}
+            `;
+        }
+
+        function handleFileDownloadReady(filename, content) {
+            const blob = new Blob([content], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename;
+            link.click();
+            URL.revokeObjectURL(url);
+            showNotification('📥 Fichier téléchargé: ' + filename);
+        }
+
+        function handleDownloadReady(filename, content) {
+            const blob = new Blob([content], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename;
+            link.click();
+            URL.revokeObjectURL(url);
+            showNotification('📥 Fichier téléchargé: ' + filename);
+        }
+
+        // New host-side handlers
+        function handleOpenURL(url) {
+            try {
+                window.open(url, '_blank');
+                showNotification('🌐 URL ouverte: ' + url);
+            } catch (e) {
+                console.error('Error opening URL:', e);
+                alert('Erreur lors de l\'ouverture de l\'URL. Le navigateur a peut-être bloqué le popup.');
+            }
+        }
+
+        function handleSpeakText(text) {
+            try {
+                if ('speechSynthesis' in window) {
+                    const utterance = new SpeechSynthesisUtterance(text);
+                    utterance.lang = 'fr-FR';
+                    utterance.rate = 1;
+                    utterance.pitch = 1;
+                    speechSynthesis.speak(utterance);
+                    showNotification('🗣️ Texte prononcé');
+                } else {
+                    alert('Synthèse vocale non supportée par ce navigateur');
+                }
+            } catch (e) {
+                console.error('Error speaking text:', e);
+                alert('Erreur lors de la synthèse vocale');
+            }
+        }
+
+        function handlePlaySound() {
+            try {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.frequency.value = 440;
+                oscillator.type = 'sine';
+                gainNode.gain.value = 0.3;
+                
+                oscillator.start();
+                setTimeout(() => {
+                    oscillator.stop();
+                    audioContext.close();
+                }, 500);
+                
+                showNotification('🎵 Son joué');
+            } catch (e) {
+                console.error('Error playing sound:', e);
+                alert('Erreur lors de la lecture du son');
+            }
+        }
+
+        function handleTriggerDownload(conn) {
+            try {
+                const content = 'Fichier généré par HMD Remote Control\nDate: ' + new Date().toISOString();
+                const blob = new Blob([content], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                
+                conn.send({
+                    type: 'download_ready',
+                    filename: 'hmd-remote-file.txt',
+                    content: content
+                });
+                
+                showNotification('📥 Fichier prêt pour téléchargement');
+            } catch (e) {
+                console.error('Error triggering download:', e);
+                alert('Erreur lors de la préparation du téléchargement');
+            }
+        }
+
+        function handlePlaySoundEffect(effect) {
+            try {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                
+                switch(effect) {
+                    case 'error':
+                        playWindowsError(audioContext);
+                        break;
+                    case 'notification':
+                        playNotification(audioContext);
+                        break;
+                    case 'success':
+                        playSuccess(audioContext);
+                        break;
+                    case 'alarm':
+                        playAlarm(audioContext);
+                        break;
+                    case 'laser':
+                        playLaser(audioContext);
+                        break;
+                    case 'explosion':
+                        playExplosion(audioContext);
+                        break;
+                    case 'coin':
+                        playMarioCoin(audioContext);
+                        break;
+                    case 'jump':
+                        playMarioJump(audioContext);
+                        break;
+                    case 'powerup':
+                        playPowerUp(audioContext);
+                        break;
+                    case 'gameover':
+                        playGameOver(audioContext);
+                        break;
+                    case 'laugh':
+                        playLaugh(audioContext);
+                        break;
+                    case 'applause':
+                        playApplause(audioContext);
+                        break;
+                    default:
+                        playDefaultSound(audioContext);
+                }
+                
+                showNotification('🔊 Son joué: ' + effect);
+            } catch (e) {
+                console.error('Error playing sound effect:', e);
+            }
+        }
+
+        // Sound effect functions using Web Audio API
+        function playWindowsError(audioContext) {
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.setValueAtTime(400, audioContext.currentTime);
+            oscillator.frequency.setValueAtTime(300, audioContext.currentTime + 0.1);
+            oscillator.frequency.setValueAtTime(400, audioContext.currentTime + 0.2);
+            
+            oscillator.type = 'sawtooth';
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.4);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.4);
+        }
+
+        function playNotification(audioContext) {
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+            oscillator.frequency.setValueAtTime(1200, audioContext.currentTime + 0.1);
+            
+            oscillator.type = 'sine';
+            gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.3);
+        }
+
+        function playSuccess(audioContext) {
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.setValueAtTime(523.25, audioContext.currentTime); // C5
+            oscillator.frequency.setValueAtTime(659.25, audioContext.currentTime + 0.1); // E5
+            oscillator.frequency.setValueAtTime(783.99, audioContext.currentTime + 0.2); // G5
+            
+            oscillator.type = 'sine';
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.4);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.4);
+        }
+
+        function playAlarm(audioContext) {
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.setValueAtTime(880, audioContext.currentTime);
+            oscillator.frequency.setValueAtTime(440, audioContext.currentTime + 0.2);
+            oscillator.frequency.setValueAtTime(880, audioContext.currentTime + 0.4);
+            oscillator.frequency.setValueAtTime(440, audioContext.currentTime + 0.6);
+            
+            oscillator.type = 'square';
+            gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.8);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.8);
+        }
+
+        function playLaser(audioContext) {
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.setValueAtTime(2000, audioContext.currentTime);
+            oscillator.frequency.exponentialRampToValueAtTime(100, audioContext.currentTime + 0.2);
+            
+            oscillator.type = 'sawtooth';
+            gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.2);
+        }
+
+        function playExplosion(audioContext) {
+            const bufferSize = audioContext.sampleRate * 0.5;
+            const buffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
+            const data = buffer.getChannelData(0);
+            
+            for (let i = 0; i < bufferSize; i++) {
+                data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / bufferSize, 2);
+            }
+            
+            const source = audioContext.createBufferSource();
+            const gainNode = audioContext.createGain();
+            
+            source.buffer = buffer;
+            source.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            gainNode.gain.setValueAtTime(0.5, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+            
+            source.start(audioContext.currentTime);
+        }
+
+        function playMarioCoin(audioContext) {
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.setValueAtTime(987.77, audioContext.currentTime); // B5
+            oscillator.frequency.setValueAtTime(1318.51, audioContext.currentTime + 0.08); // E6
+            
+            oscillator.type = 'square';
+            gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.4);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.4);
+        }
+
+        function playMarioJump(audioContext) {
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.setValueAtTime(300, audioContext.currentTime);
+            oscillator.frequency.exponentialRampToValueAtTime(600, audioContext.currentTime + 0.1);
+            oscillator.frequency.exponentialRampToValueAtTime(300, audioContext.currentTime + 0.2);
+            
+            oscillator.type = 'square';
+            gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.3);
+        }
+
+        function playPowerUp(audioContext) {
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.setValueAtTime(523.25, audioContext.currentTime);
+            oscillator.frequency.setValueAtTime(659.25, audioContext.currentTime + 0.1);
+            oscillator.frequency.setValueAtTime(783.99, audioContext.currentTime + 0.2);
+            oscillator.frequency.setValueAtTime(1046.50, audioContext.currentTime + 0.3);
+            oscillator.frequency.setValueAtTime(1318.51, audioContext.currentTime + 0.4);
+            
+            oscillator.type = 'sine';
+            gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.6);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.6);
+        }
+
+        function playGameOver(audioContext) {
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.setValueAtTime(400, audioContext.currentTime);
+            oscillator.frequency.exponentialRampToValueAtTime(100, audioContext.currentTime + 0.5);
+            
+            oscillator.type = 'sawtooth';
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.5);
+        }
+
+        function playLaugh(audioContext) {
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.setValueAtTime(200, audioContext.currentTime);
+            oscillator.frequency.linearRampToValueAtTime(300, audioContext.currentTime + 0.05);
+            oscillator.frequency.linearRampToValueAtTime(200, audioContext.currentTime + 0.1);
+            oscillator.frequency.linearRampToValueAtTime(300, audioContext.currentTime + 0.15);
+            oscillator.frequency.linearRampToValueAtTime(200, audioContext.currentTime + 0.2);
+            oscillator.frequency.linearRampToValueAtTime(300, audioContext.currentTime + 0.25);
+            oscillator.frequency.linearRampToValueAtTime(200, audioContext.currentTime + 0.3);
+            
+            oscillator.type = 'sawtooth';
+            gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.4);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.4);
+        }
+
+        function playApplause(audioContext) {
+            const bufferSize = audioContext.sampleRate * 1.0;
+            const buffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
+            const data = buffer.getChannelData(0);
+            
+            for (let i = 0; i < bufferSize; i++) {
+                data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / bufferSize, 0.5) * 0.3;
+            }
+            
+            const source = audioContext.createBufferSource();
+            const gainNode = audioContext.createGain();
+            
+            source.buffer = buffer;
+            source.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            gainNode.gain.setValueAtTime(0.5, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 1.0);
+            
+            source.start(audioContext.currentTime);
+        }
+
+        function playDefaultSound(audioContext) {
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.value = 440;
+            oscillator.type = 'sine';
+            gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.2);
+        }
+
+        // New Host-side Handlers
+        function handleVirtualKeyboardText(text) {
+            try {
+                // Simulate typing by creating a text input and focusing it
+                const hiddenInput = document.createElement('input');
+                hiddenInput.type = 'text';
+                hiddenInput.style.position = 'absolute';
+                hiddenInput.style.left = '-9999px';
+                document.body.appendChild(hiddenInput);
+                hiddenInput.focus();
+                
+                // Type the text character by character
+                let i = 0;
+                const typeChar = () => {
+                    if (i < text.length) {
+                        hiddenInput.value += text[i];
+                        i++;
+                        setTimeout(typeChar, 50);
+                    } else {
+                        document.body.removeChild(hiddenInput);
+                        showNotification('⌨️ Texte reçu: ' + text.substring(0, 30) + '...');
+                    }
+                };
+                typeChar();
+            } catch (e) {
+                console.error('Error handling virtual keyboard text:', e);
+                alert('Texte reçu (simulé): ' + text);
+            }
+        }
+
+        function handleVirtualKey(key) {
+            try {
+                // Simulate key press
+                const event = new KeyboardEvent('keydown', { key: key });
+                document.dispatchEvent(event);
+                showNotification('⌨️ Touche reçue: ' + key);
+            } catch (e) {
+                console.error('Error handling virtual key:', e);
+                alert('Touche reçue (simulée): ' + key);
+            }
+        }
+
+        function handleVideoControl(action) {
+            try {
+                // This is a simulation - real video control would require specific integration
+                const actions = {
+                    'play': '▶️ Play',
+                    'pause': '⏸️ Pause',
+                    'stop': '⏹️ Stop',
+                    'fullscreen': '🖥️ Fullscreen',
+                    'mute': '🔇 Mute',
+                    'volume_up': '🔊 Volume +',
+                    'volume_down': '🔉 Volume -',
+                    'forward': '⏩ Forward',
+                    'rewind': '⏪ Rewind'
+                };
+                
+                showNotification('📺 Commande vidéo reçue: ' + (actions[action] || action));
+                
+                // Try to find and control video elements on the page
+                const videos = document.querySelectorAll('video');
+                if (videos.length > 0) {
+                    const video = videos[0];
+                    switch(action) {
+                        case 'play':
+                            video.play();
+                            break;
+                        case 'pause':
+                            video.pause();
+                            break;
+                        case 'stop':
+                            video.pause();
+                            video.currentTime = 0;
+                            break;
+                        case 'fullscreen':
+                            if (video.requestFullscreen) video.requestFullscreen();
+                            break;
+                        case 'mute':
+                            video.muted = !video.muted;
+                            break;
+                        case 'volume_up':
+                            video.volume = Math.min(1, video.volume + 0.1);
+                            break;
+                        case 'volume_down':
+                            video.volume = Math.max(0, video.volume - 0.1);
+                            break;
+                        case 'forward':
+                            video.currentTime += 10;
+                            break;
+                        case 'rewind':
+                            video.currentTime -= 10;
+                            break;
+                    }
+                }
+            } catch (e) {
+                console.error('Error handling video control:', e);
+            }
+        }
+
+        function handleFileUpload(filename, content) {
+            try {
+                // Create a download link for the uploaded file
+                const link = document.createElement('a');
+                link.href = content;
+                link.download = filename;
+                link.click();
+                showNotification('📤 Fichier reçu: ' + filename);
+            } catch (e) {
+                console.error('Error handling file upload:', e);
+                alert('Erreur lors de la réception du fichier');
+            }
+        }
+
+        function handleFileDownloadRequest(conn, filename) {
+            try {
+                // This is a simulation - real file download would require server-side access
+                const simulatedContent = 'Contenu simulé du fichier: ' + filename + '\nDate: ' + new Date().toISOString();
+                conn.send({
+                    type: 'file_download_ready',
+                    filename: filename,
+                    content: simulatedContent
+                });
+                showNotification('📥 Fichier prêt: ' + filename);
+            } catch (e) {
+                console.error('Error handling file download request:', e);
+            }
+        }
+
+        function handleBatteryInfoRequest(conn) {
+            try {
+                const batteryInfo = {
+                    level: 'Non disponible (API limitée)',
+                    charging: 'Inconnu',
+                    chargingTime: 'Inconnu',
+                    dischargingTime: 'Inconnu'
+                };
+                
+                // Try to get real battery info if available
+                if (navigator.getBattery) {
+                    navigator.getBattery().then(battery => {
+                        batteryInfo.level = Math.round(battery.level * 100) + '%';
+                        batteryInfo.charging = battery.charging ? 'Oui' : 'Non';
+                        batteryInfo.chargingTime = battery.chargingTime + 's';
+                        batteryInfo.dischargingTime = battery.dischargingTime + 's';
+                        
+                        conn.send({
+                            type: 'battery_info_response',
+                            info: batteryInfo
+                        });
+                    });
+                } else {
+                    conn.send({
+                        type: 'battery_info_response',
+                        info: batteryInfo
+                    });
+                }
+                
+                showNotification('🔋 Infos batterie envoyées');
+            } catch (e) {
+                console.error('Error handling battery info request:', e);
+            }
+        }
+
+        function handleNetworkInfoRequest(conn) {
+            try {
+                const networkInfo = {
+                    online: navigator.onLine ? 'Oui' : 'Non',
+                    connectionType: navigator.connection ? navigator.connection.effectiveType : 'Inconnu',
+                    downlink: navigator.connection ? navigator.connection.downlink + ' Mbps' : 'Inconnu',
+                    rtt: navigator.connection ? navigator.connection.rtt + ' ms' : 'Inconnu'
+                };
+                
+                conn.send({
+                    type: 'network_info_response',
+                    info: networkInfo
+                });
+                
+                showNotification('📡 Infos réseau envoyées');
+            } catch (e) {
+                console.error('Error handling network info request:', e);
+            }
+        }
+
+        function handleDisplayImage(url) {
+            try {
+                // Create an overlay to display the image
+                const overlay = document.createElement('div');
+                overlay.id = 'imageOverlay';
+                overlay.style.cssText = `
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: rgba(0, 0, 0, 0.9);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    z-index: 10000;
+                `;
+                
+                const img = document.createElement('img');
+                img.src = url;
+                img.style.maxWidth = '90%';
+                img.style.maxHeight = '90%';
+                img.style.objectFit = 'contain';
+                img.onerror = () => {
+                    alert('Erreur lors du chargement de l\'image');
+                    overlay.remove();
+                };
+                
+                overlay.appendChild(img);
+                document.body.appendChild(overlay);
+                
+                // Click to close
+                overlay.onclick = () => {
+                    overlay.remove();
+                };
+                
+                showNotification('🖼️ Image affichée');
+            } catch (e) {
+                console.error('Error displaying image:', e);
+                alert('Erreur lors de l\'affichage de l\'image');
+            }
+        }
+
+        function handleHideImage() {
+            try {
+                const overlay = document.getElementById('imageOverlay');
+                if (overlay) {
+                    overlay.remove();
+                    showNotification('❌ Image masquée');
+                }
+            } catch (e) {
+                console.error('Error hiding image:', e);
+            }
+        }
+
+        function showNotification(message) {
+            const notification = document.createElement('div');
+            notification.className = 'notification';
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+
+        // Check browser support
+        window.addEventListener('load', () => {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                alert('Votre navigateur ne supporte pas l\'accès à la webcam. Utilisez Chrome ou Edge.');
+            }
+        });
+    </script>
+</body>
+</html>
